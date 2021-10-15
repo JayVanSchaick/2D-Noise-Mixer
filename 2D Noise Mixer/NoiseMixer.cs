@@ -8,7 +8,7 @@ using Math = Utils.Math;
 namespace NoiseMixer
 {
     /// <summary>
-    /// This class was written by Jay Van Schaick to quick and efficiently mix 2d noise.
+    /// This class was written by Jay Van Schaick to quickly and efficiently mix 2d noise with a few lines of code.
     /// The section of the class to hold methods
     /// </summary>
     public partial class NoiseMixer
@@ -104,7 +104,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Subtract a new layer to the current mixer layer.  
+        /// Subtract a new layer from the current mixer layer.  
         /// </summary>
         /// <param name="Noise">The noise to be used in the mixer. Must be between (-1,1).</param>
         /// <param name="ScaleNoise">The scale of the noise to be used in the mixer</param>
@@ -122,7 +122,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Multiply a new layer to the current mixer layer.  
+        /// Multiply a new layer by the current mixer layer.  
         /// </summary>
         /// <param name="Noise">The noise to be used in the mixer. Must be between (-1,1).</param>
         /// <param name="ScaleNoise">The scale of the noise to be used in the mixer</param>
@@ -170,7 +170,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Only add to the current mixer layer where a new layer is lower.  
+        /// Only add to the current mixer layer where the new layer is lower.  
         /// </summary>
         /// <param name="Noise">The noise to be used in the mixer. Must be between (-1,1).</param>
         /// <param name="ScaleNoise">The scale of the noise to be used in the mixer</param>
@@ -204,7 +204,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Scale the whole noise mixer, pushing higher values higher, and lower value lower. The result will always between (-1,1).
+        /// Scale the whole noise mixer, pushing higher values higher, and lower values lower. The result will always between (-1,1).
         /// </summary>
         /// <param name="ScaleAmount">The amount to scale, a value 1 will not effect the mixer at all.</param>
         public void Scale(double ScaleAmount)
@@ -221,7 +221,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Single Thread compute calculations. 
+        /// Single Thread compute calculations. If background thread computation is needed use ApplyOnOtherThreads().
         /// </summary>
         /// <param name="NormalizeReturn">The return data values be between (0,1) if true, or between (-1,1) if false.</param> 
         /// <returns></returns>
@@ -255,7 +255,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Single Thread compute calculations that return a float. If main thread computation is needed use Apply() or ApplyF().
+        /// Single Thread compute calculations that return a float. If background thread computation is needed use ApplyOnOtherThreads().
         /// </summary>
         /// <param name="NormalizeReturn">The return data values be between (0,1) if true, or between (-1,1) if false.</param> 
         /// <returns></returns>
@@ -285,7 +285,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Returns the value of the noise in the mixer, if any calculations has been done, such as apply or ApplyOnOtherThreads.
+        /// Returns the value of the noise in the mixer, if any calculations has been done, such as Apply() or ApplyOnOtherThreads().
         /// </summary>
         /// <param name="results">The output of results, if there are any in the form of a double[,].</param>
         /// <param name="NormalizeReturn">The return data values be between (0,1) if true, or between (-1,1) if false.</param> 
@@ -307,7 +307,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Returns the value of the noise in the mixer in float form, that is if any calculations have been done, such as apply or ApplyOnOtherThreads.
+        /// Returns the value of the noise in the mixer in float form, that is if any calculations have been done, such as Apply() or ApplyOnOtherThreads().
         /// </summary>
         /// <param name="results">The output of results, if there are any in the form of a float[,].</param>
         /// <returns>Returns true if theres is a value to return, otherwise returns false</returns>
