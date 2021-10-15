@@ -1,3 +1,0 @@
-[submodule "Utilities"]
-	path = include/Utilities
-	url = https://github.com/JayVanSchaick/2D-Noise-Mixer.git
