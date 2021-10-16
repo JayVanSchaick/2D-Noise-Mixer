@@ -20,7 +20,7 @@ This 2D noise mixer will let the user have a high degree of control over the dif
 
 ### Documentation
 
-##### Please note: the classes themselves have more Documentation in there XML Docs.
+##### Please note: the classes themselves have more Documentation in their XML Docs.
  
 
 * How to use the class
