@@ -11,12 +11,12 @@ This 2D noise mixer will let the user have a high degree of control over the dif
 ##### Using Unity: 2D Mixed Noise applied as a texture to a plain on the left, 2D Mixed Noise applied to the terrain system.
 
 <p align="center">
- <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%201.png" width="33%">
- <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%202.png" width="33%">
- <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%203.png" width="33%">
- <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture4.png" width="33%">
- <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture5.png" width="33%">
- <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture6.png" width="33%">
+ <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%201.png" width="25%">
+ <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%202.png" width="25%">
+ <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%203.png" width="25%">
+ <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture4.png" width="25%">
+ <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture5.png" width="25%">
+ <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture6.png" width="25%">
 </p>
 
 ## Getting Started
