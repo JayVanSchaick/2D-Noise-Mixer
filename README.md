@@ -6,8 +6,8 @@ The 2D noise mixer is designed to make mixing different types noise quick with o
 
 This 2D noise mixer will let the user have a high degree of control over the different noise layers, and over the mixer itself. A list of noises are provided as well as a list of manipulations including masking between layers, shifting, scaling, and inverting. The noise is calculated on the CPU and can be off loaded onto a background thread is necessary. New noises are easy to implement with the INoise interface, and can be up and running in short while. A list of already added noises are Perlin, Simplex, Voronoi, Worley, OpenSimplex, and OpenSimplex2S.
 
-<img style="display: block" src = "zRead%20Me%20Images/Capture%201.png" width="20%">
-<img style="display: block" src = "zRead%20Me%20Images/Capture%202.png" width="20%">
+<img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%201.png" width="20%">
+<img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%202.png" width="20%">
 
 ## Getting Started
 
