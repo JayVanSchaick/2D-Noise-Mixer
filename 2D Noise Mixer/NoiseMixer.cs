@@ -59,6 +59,19 @@ namespace NoiseMixer
         }
 
         /// <summary>
+        /// The Constructor which takes an other noise mixer and assigns its computed values to itself. If the noise maker used in initializing has not been calculated (Apply() or something like it called),
+        /// this new instance will only have the basic values of the first.
+        /// </summary>
+        /// <param name="NoiseMixer">The noise maker to be used in initializing this class.</param>
+        public NoiseMixer(NoiseMixer NoiseMixer)
+        {
+
+            currentLayerValues = NoiseMixer.currentLayerValues.Clone() as double[,];
+
+        }
+
+
+        /// <summary>
         /// The Constructor, will initialize the first layer with a value of zero.
         /// </summary>
         /// <param name="XResolution">The width of the noise amount.</param>
@@ -592,8 +605,6 @@ namespace NoiseMixer
                     { NormalizeArray[x, y] = (float)currentLayerValues[x, y]; }
                 }
             }
-
-          //  UnityEngine.Debug.Log(NormalizeArray[1, 1]);
 
             return NormalizeArray;
         }
