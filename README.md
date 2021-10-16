@@ -23,7 +23,7 @@ This 2D noise mixer will let the user have a high degree of control over the dif
 
 ### Dependencies
 
-* Bacic C# libraries such as System.
+* Basic C# libraries such as System.
 * My Utilities Repo.
 
 ### Installing
