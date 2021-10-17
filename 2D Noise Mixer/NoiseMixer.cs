@@ -16,7 +16,6 @@ namespace NoiseMixer
         //the current layer
         public NoiseMixerActions CurrentLayer;
 
-        
         //is the mixer in the middle of a multi-thread calculation?
         private bool MixerMiddleOfCalculation;
 
@@ -28,7 +27,6 @@ namespace NoiseMixer
 
         const string ConflictErrMes = "Conflicting Operations: trying to run a main thread computation while also running" +
                               " one on background threads. Noise mixer can not take this action and must wait until background threads are finished.";
-
 
         HydraulicErosion hydraulicErosion;
         int iterations;
@@ -202,9 +200,10 @@ namespace NoiseMixer
         /// Tier the current noise layer to the nearest tier. The Amount of tiers will be equally spread from (-1,1).
         /// </summary>
         /// <param name="TierAmounts">The amount of tiers to create, the more tiers the smaller they will be.</param>
-        public void Tier(int TierAmounts)
+        /// <param name="Mask">The amount of effect tiering the noise should have on the noise being tiered. 0 is full effect through 1 which is no effect</param>
+        public void Tier(int TierAmounts, double EffectAmount)
         {
-            Actions.Add(new TierNoise((uint)TierAmounts, this));
+            Actions.Add(new TierNoise((uint)TierAmounts, Math.Clamp(EffectAmount, 0, 1), this));
         }
 
         /// <summary>
@@ -357,7 +356,7 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Add hydraulic erosion to be applied after all of the noise layers are computed.
+        /// Add hydraulic erosion to be applied after all of the noise layers are computed. 
         /// </summary>
         public void HydraulicErosion(int Iterations)
         {
@@ -370,7 +369,7 @@ namespace NoiseMixer
         /// Add hydraulic erosion to be applied after all of the noise layers are computed.
         /// </summary>
         /// <param name="Seed">The Seed to be used for the hydraulic erosion randomness</param>
-        public void HydraulicErosion(int Seed, int Iterations)
+        public void HydraulicErosion(int Iterations, int Seed)
         {
             iterations = Iterations;
             hydraulicErosion = new HydraulicErosion((uint)currentLayerValues.GetLength(0), (uint)currentLayerValues.GetLength(1), Seed);
@@ -392,9 +391,9 @@ namespace NoiseMixer
         /// <param name="MaxDropletLifetime"></param>
         /// <param name="InitialWaterVolume"></param>
         /// <param name="InitialSpeed"></param>
-        public void HydraulicErosion(int Iterations, int Seed, int ErosionRadius = 3, float Inertia = 0.05f, float SedimentCapacityFactor = 4,
-                                float MinSedimentCapacity = 0.01f, float ErodeSpeed = 0.3f, float DepositSpeed = 0.3f, float EvaporateSpeed = 0.01f,
-                                float Gravity = 4, float MaxDropletLifetime = 30, float InitialWaterVolume = 1, float InitialSpeed = 1)
+        public void HydraulicErosion(int Iterations, int Seed, int ErosionRadius = 3, double Inertia = 0.05f, double SedimentCapacityFactor = 4,
+                                double MinSedimentCapacity = 0.01f, double ErodeSpeed = 0.3f, double DepositSpeed = 0.3f, double EvaporateSpeed = 0.01f,
+                                double Gravity = 4, double MaxDropletLifetime = 30, double InitialWaterVolume = 1, double InitialSpeed = 1)
         {
             iterations = Iterations;
             hydraulicErosion = new HydraulicErosion((uint)currentLayerValues.GetLength(0), (uint)currentLayerValues.GetLength(1), Seed, ErosionRadius, Inertia, SedimentCapacityFactor,
@@ -523,7 +522,7 @@ namespace NoiseMixer
             CheckIfFinished();
         }
 
-        //are all the background threads done.
+        //are all the background threads done computing.
         void CheckIfFinished()
         {
             bool isFinished = true;
@@ -712,18 +711,23 @@ namespace NoiseMixer
 
             double[] tierValues;
 
-            public TierNoise(uint tierAmount, NoiseMixer Mixer)
+            double mask;
+
+
+            public TierNoise(uint TierAmount, double Mask, NoiseMixer Mixer)
             {
                 mixer = Mixer;
 
-                if (tierAmount == 0)
-                    tierAmount++;
+                mask = Mask;
 
-                double spaceBetweenTiers = 2.0 / tierAmount;
+                if (TierAmount == 0)
+                    TierAmount++;
 
-                tierValues = new double[tierAmount + 1];
+                double spaceBetweenTiers = 2.0 / TierAmount;
 
-                for (int i = 0; i <= tierAmount; i++)
+                tierValues = new double[TierAmount + 1];
+
+                for (int i = 0; i <= TierAmount; i++)
                 {
                     tierValues[i] = -1 + (spaceBetweenTiers * i);
                     
@@ -753,7 +757,7 @@ namespace NoiseMixer
             {
 
 
-                mixer.currentLayerValues[XPos, YPos] = ClosestTo(tierValues, mixer.currentLayerValues[XPos, YPos]);
+                mixer.currentLayerValues[XPos, YPos] = Math.Lerp(ClosestTo(tierValues, mixer.currentLayerValues[XPos, YPos]), mixer.currentLayerValues[XPos, YPos], mask);
 
 
             }
