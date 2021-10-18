@@ -24,6 +24,10 @@ namespace NoiseMixer
 
         //multi-thread value to see if all jobs have returned.
         private bool[] returnedThreads;
+        uint threadAmount;
+        Vector2[] startPoints;
+        Vector2[] endPoints;
+
 
         const string ConflictErrMes = "Conflicting Operations: trying to run a main thread computation while also running" +
                               " one on background threads. Noise mixer can not take this action and must wait until background threads are finished.";
@@ -247,6 +251,11 @@ namespace NoiseMixer
 
             for (int action = 0; action < Actions.Count; action++)
             {
+                if (Actions[action] is ILayersBelowMustBeCalculated layer)
+                {
+                    layer.setup();
+                }
+
                 for (int x = 0; x < currentLayerValues.GetLength(0); x++)
                 {
                     for (int y = 0; y < currentLayerValues.GetLength(1); y++)
@@ -280,6 +289,12 @@ namespace NoiseMixer
 
             for (int action = 0; action < Actions.Count; action++)
             {
+
+                if (Actions[action] is ILayersBelowMustBeCalculated layer)
+                {
+                    layer.setup();
+                }
+
                 for (int x = 0; x < currentLayerValues.GetLength(0); x++)
                 {
                     for (int y = 0; y < currentLayerValues.GetLength(1); y++)
@@ -293,7 +308,7 @@ namespace NoiseMixer
                 DoHydraulicErosion();
 
             return DoubleToFloat(NormalizeReturn);
-            
+
         }
 
         /// <summary>
@@ -348,7 +363,7 @@ namespace NoiseMixer
             MixerMiddleOfCalculation = true;
             CalculationAtleastOnce = true;
 
-            MultithreadingJobsHandler.AddJob(new Action<int,uint>(SetUpMutiThreadCal), new object[] { ThreadAmount });
+            MultithreadingJobsHandler.AddJob(new Action<int, uint>(SetUpMutiThreadCal), new object[] { ThreadAmount });
 
             MultithreadingJobsHandler.Update();
 
@@ -409,6 +424,11 @@ namespace NoiseMixer
             hydraulicErosion = null;
         }
 
+        public void SmoothValues(int FilterSize, double EffectAmount)
+        {
+            Actions.Add(new MixerSmooth(FilterSize, EffectAmount, this));
+        }
+
         //set up Multi-Threaded calculations. 
         void SetUpMutiThreadCal(int ID, uint ThreadAmount)
         {
@@ -425,22 +445,38 @@ namespace NoiseMixer
             }
 
             returnedThreads = new bool[JobAmount];
+            this.threadAmount = (uint)JobAmount;
+
+            SpliInToChunks(JobAmount, out startPoints, out endPoints);
 
 
-            SpliInToChunks(JobAmount, out Vector2[] startPoints, out Vector2[] endPoints);
 
-           
-
-            for (int i = 0; i < JobAmount - 1; i++)
+            for (int i = 0; i < Actions.Count; i++)
             {
-                MultithreadingJobsHandler.AddJob(new Action<int,uint, Vector2,Vector2>(CalculateMixerPart), new object[] { (uint)i, startPoints[i], endPoints[i] });
+                if (Actions[i] is ILayersBelowMustBeCalculated layer)
+                {
+                    layer.setupMultiThreadingValues(threadAmount);
+                }
+
+            }
+
+            StartThreads(0);
+
+
+        }
+
+
+        void StartThreads(int ActionLayerToStartWith)
+        {
+           
+            for (int i = 0; i < threadAmount - 1; i++)
+            {
+                MultithreadingJobsHandler.AddJob(new Action<int, uint, Vector2, Vector2, int>(CalculateMixerPart), new object[] { (uint)i, startPoints[i], endPoints[i], ActionLayerToStartWith });
             }
 
             MultithreadingJobsHandler.Update();
 
-            CalculateMixerPart(0, (uint)(JobAmount - 1), startPoints[JobAmount - 1], endPoints[JobAmount - 1]);
-
-
+            CalculateMixerPart(0, (uint)(threadAmount - 1), startPoints[threadAmount - 1], endPoints[threadAmount - 1], ActionLayerToStartWith);
         }
 
         //split the 2d array in to chunk for each background thread. 
@@ -464,7 +500,7 @@ namespace NoiseMixer
 
                 for (int y = 0; y < currentLayerValues.GetLength(1); y++)
                 {
-                    
+
                     if (counter == 0 && counterVertor < amountOfChunks) //should not be greater....but just in case
                     {
                         startPos[counterVertor] = new Vector2(x, y);
@@ -481,7 +517,7 @@ namespace NoiseMixer
 
                     }
 
-                   
+
 
                 }
             }
@@ -494,21 +530,40 @@ namespace NoiseMixer
         }
 
         //the calculations to be run on multi-thread
-        void CalculateMixerPart(int Id, uint part, Vector2 startPos, Vector2 endPos)
+        void CalculateMixerPart(int Id, uint part, Vector2 startPos, Vector2 endPos, int actionStartPlace)
         {
-           
-            for (int action = 0; action < Actions.Count; action++)
+
+            for (int action = actionStartPlace; action < Actions.Count; action++)
             {
+               
+                //if is calculation below must be finished
+                if (Actions[action] is ILayersBelowMustBeCalculated layer && layer.areLayersBelowCalculated() == false)
+                {
+                    layer.setpartFinished(part);
+
+                    if (layer.areLayersBelowCalculated() == true)
+                    {
+                        layer.setup();
+                        StartThreads(action);
+                    }
+
+
+                    //free thread 
+                    return;   
+
+                }
+
+
 
                 for (int x = (int)startPos.X; x <= (int)endPos.X; x++)
                 {
-                    
+
 
                     for (int y = 0; y < currentLayerValues.GetLength(1); y++)
                     {
 
                         if (x == (int)startPos.X && y < startPos.Y)
-                            continue;                       
+                            continue;
 
                         if (x == (int)endPos.X && y > endPos.Y)
                             break;
@@ -516,6 +571,8 @@ namespace NoiseMixer
                         Actions[action].ExecuteCommand((uint)x, (uint)y);
                     }
                 }
+
+
             }
 
             returnedThreads[part] = true;
@@ -560,7 +617,7 @@ namespace NoiseMixer
             return NormalizeArray;
         }
 
-        private double[,] AddOneCurrentLayerValues( double[,] ArrayToChange )
+        private double[,] AddOneCurrentLayerValues(double[,] ArrayToChange)
         {
             double[,] AddOne = new double[ArrayToChange.GetLength(0), ArrayToChange.GetLength(1)];
 
@@ -608,8 +665,6 @@ namespace NoiseMixer
             return NormalizeArray;
         }
 
-
-
         private void DoHydraulicErosion()
         {
             //1D  array for Erosion, must be Positive value. Add one to keep values scaled
@@ -640,6 +695,85 @@ namespace NoiseMixer
     /// </summary>
     public partial class NoiseMixer
     {
+
+        private class MixerSmooth : NoiseMixerActions, ILayersBelowMustBeCalculated
+        {
+            //multi-threading value
+            bool[] bottomPartCalculated;
+
+            int filterSize;
+            NoiseMixer mixer;
+            double effectAmount;
+            double[,] savedLowerLayer;
+
+            public MixerSmooth(int FilterSize, double EffectAmount, NoiseMixer Mixer)
+            {
+
+                effectAmount = EffectAmount;
+                filterSize = FilterSize;
+                mixer = Mixer;
+
+            }
+
+            public void setpartFinished(uint partId)
+            {
+                bottomPartCalculated[partId] = true;
+            }
+
+            public bool areLayersBelowCalculated()
+            {
+                bool isFinished = true;
+
+                foreach (bool threadFinished in bottomPartCalculated)
+                {
+                    if (threadFinished == false)
+                    {
+                        isFinished = false;
+                        break;
+                    }
+                }
+
+                return isFinished;
+            }
+
+            public void setupMultiThreadingValues(uint threadAmount)
+            {
+                bottomPartCalculated = new bool[threadAmount];
+            }
+
+            public override void ExecuteCommand(uint XPos, uint YPos)
+            {
+
+                double aaValue = 0;
+                int counter = 0;
+
+
+
+                for (int i = (int)XPos - filterSize; i < XPos + filterSize + 1; ++i)
+                {
+                    if (i < 0 || i >= savedLowerLayer.GetLength(0))
+                        continue;
+
+                    for (int j = (int)YPos - filterSize; j < YPos + filterSize + 1; ++j)
+                    {
+                        if (j < 0 || j >= savedLowerLayer.GetLength(1))
+                            continue;
+
+                        aaValue += savedLowerLayer[i, j];
+                        counter++;
+
+                    }
+                }
+
+                mixer.currentLayerValues[XPos, YPos] = Math.Lerp(aaValue / counter, mixer.currentLayerValues[XPos, YPos], effectAmount);
+
+            }
+
+            public void setup()
+            {
+                savedLowerLayer = mixer.currentLayerValues.Clone() as double[,];
+            }
+        }
 
 
         /// <summary>
@@ -680,7 +814,6 @@ namespace NoiseMixer
             }
         }
 
-
         /// <summary>
         /// A Class to shift the current values in the mixer.
         /// </summary>
@@ -700,7 +833,6 @@ namespace NoiseMixer
                 mixer.currentLayerValues[XPos, YPos] = Math.Clamp(mixer.currentLayerValues[XPos, YPos] + shiftAmount, -1, 1);
             }
         }
-
 
         /// <summary>
         /// A Class to tier the current values in the mixer to the nearest value.
@@ -730,7 +862,7 @@ namespace NoiseMixer
                 for (int i = 0; i <= TierAmount; i++)
                 {
                     tierValues[i] = -1 + (spaceBetweenTiers * i);
-                    
+
                 }
             }
 
@@ -806,7 +938,7 @@ namespace NoiseMixer
                 value = BaseManipulations(value);
 
                 //add the mask effect
-                value = Math.Lerp(value, mixer.currentLayerValues[XPos,YPos], GetLayerMask(XPos, YPos));
+                value = Math.Lerp(value, mixer.currentLayerValues[XPos, YPos], GetLayerMask(XPos, YPos));
 
                 if (XPos == 1 && YPos == 1)
                 {
@@ -905,7 +1037,7 @@ namespace NoiseMixer
         public class AddLayer : LayerBase
         {
             public AddLayer(INoise Noise, double ScaleNoise, NoiseMixer Mixer) : base(Noise, ScaleNoise, Mixer)
-            {  
+            {
             }
 
             public override void ExecuteCommand(uint XPos, uint YPos)
@@ -943,9 +1075,9 @@ namespace NoiseMixer
                 value = BaseManipulations(value);
 
                 //add the mask effect
-                value = Math.Lerp(value , mixer.currentLayerValues[XPos, YPos], GetLayerMask(XPos, YPos));
+                value = Math.Lerp(value, mixer.currentLayerValues[XPos, YPos], GetLayerMask(XPos, YPos));
 
-                mixer.currentLayerValues[XPos, YPos]  = Math.Clamp((mixer.currentLayerValues[XPos, YPos] + value) / 2, -1 , 1);
+                mixer.currentLayerValues[XPos, YPos] = Math.Clamp((mixer.currentLayerValues[XPos, YPos] + value) / 2, -1, 1);
             }
 
         }
@@ -1135,6 +1267,7 @@ namespace NoiseMixer
 
         }
 
+
         public abstract class NoiseMixerActions
         {
             /// <summary>
@@ -1144,6 +1277,19 @@ namespace NoiseMixer
             /// <param name="YPos"></param>
             /// <param name="mixer"></param>
             public abstract void ExecuteCommand(uint XPos, uint YPos);
+
+        }
+
+        interface ILayersBelowMustBeCalculated
+        {
+
+            bool areLayersBelowCalculated();
+
+            void setupMultiThreadingValues(uint threadAmount);
+
+            void setpartFinished(uint partId);
+
+            void setup();
 
         }
 
