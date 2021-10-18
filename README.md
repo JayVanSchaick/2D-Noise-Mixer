@@ -51,6 +51,7 @@ A list of already added noises are
 * How to use the class
 
 *The following creates a new Noise Mixer class.
+
 ```C#
 using NoiseMixer;
 NoiseMixer noiseMixer = new NoiseMixer.NoiseMixer((uint)resolution, (uint)resolution);
@@ -61,7 +62,7 @@ NoiseMixer noiseMixer = new NoiseMixer.NoiseMixer((uint)resolution, (uint)resolu
 noiseMixer.NewCombineLayer(new PerlinNoise(seed), ScaleNoise);
 ```
 
-* A list of different types of noise layer include:
+* A list of different types of noise layers include:
 
 ```C#
 noiseMixer.NewCombineLayer(INoise Noise, double NoiseScale);
@@ -83,10 +84,11 @@ noiseMixer.NewCombineLayer(new PerlinNoise(seed), ScaleNoise).Shift(float ShiftA
 ```
 
 *Or strung together: 
+
 ```C#
 noiseMixer.NewCombineLayer(new PerlinNoise(seed), ScaleNoise).LayerMask(float MaskAmount).Shift(float ShiftAmount).Scale(float ScaleAmount).Inverse();
 ```
-* The Mixer class itself can be manipulated, which in turn manipulates every value in the mixer.
+* Instead of manipulating the layer, the Mixer class itself can be manipulated, which in turn manipulates every value in the mixer.
 
 ```C#
 noiseMixer.Inverse();
@@ -101,7 +103,7 @@ noiseMixer.Tier(int AmountOfTiers);
 noiseMixer.HydraulicErosion(int Iterations);
 ```
 
-* Once all of the setup has been setup Apply() must be called to do the calculation (or ApplyF() if an array of floats is preferred). Both methods are main thread.
+* Once all of the layers have been setup, Apply() must be called to do the calculations (or ApplyF() if an array of floats is preferred). Both methods are run on the main thread.
 
 ```C#
 noiseMixer.Apply(bool normalize); //For double array
@@ -110,14 +112,14 @@ noiseMixer.ApplyF(bool normalize); //For float array
 
 ```
 
-* If doing the calculation no a background thread is preferred, use  
+* If doing the calculations on a background thread is preferred, use  
 
 ```C#
 noiseMixer.ApplyOnOtherThreads(uint threadsAmount);
 
 ```
 
-* If the calculations where done on a background thread, or was computed and the user want to retrieve the values without doing the calculations again GetCalculations() can be called to retrieve the results.  
+* If the calculations where done on a background thread, or was computed and the user wants to retrieve the values without doing the calculations again GetCalculations() can be called to retrieve the results.  
 
 ```C#
 noiseMixer. GetCalculations(out double[,] Results, bool normalize); // for double array
