@@ -147,4 +147,4 @@ This project is licensed under the MIT License - see https://opensource.org/lice
 
 ## Acknowledgments
 
-Inspiration, code snippets, etc are in the classes themselves with a link to the originals.
+Inspiration, code snippets, etc are in the classes themselves with a link to the originals. 
