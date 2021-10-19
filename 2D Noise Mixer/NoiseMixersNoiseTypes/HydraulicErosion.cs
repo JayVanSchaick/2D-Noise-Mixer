@@ -12,8 +12,6 @@ namespace NoiseMixer
         /// Taken from https://github.com/arthursimas1/Hydraulic-Erosion/blob/master/src/Erosion.cpp
         /// </summary>
 
-        Random random;
-
         uint mapSizeX;
         uint mapSizeY;
 
@@ -59,23 +57,13 @@ namespace NoiseMixer
 
             mapSizeY = MapSizeY;
 
-            random = new Random();
-            InitializeBrushIndices();
-        }
-
-        public HydraulicErosion(uint MapSizeX, uint MapSizeY, int Seed)
-        {
-            mapSizeX = MapSizeX;
-            mapSizeY = MapSizeY;
-
-            random = new Random(Seed);
             InitializeBrushIndices();
         }
 
         /// <summary>
         /// A Constructor to give total control over the Hydraulic Erosion System.
         /// </summary>
-        public HydraulicErosion(uint MapSizeX, uint MapSizeY, int Seed, int erosionRadius = 3, double inertia = 0.05f, double sedimentCapacityFactor = 4,
+        public HydraulicErosion(uint MapSizeX, uint MapSizeY, int erosionRadius = 3, double inertia = 0.05f, double sedimentCapacityFactor = 4,
                                 double minSedimentCapacity = 0.01f, double erodeSpeed = 0.3f, double depositSpeed = 0.3f, double evaporateSpeed = 0.01f,
                                 double gravity = 4, double maxDropletLifetime = 30, double initialWaterVolume = 1, double initialSpeed = 1)
         {
@@ -95,19 +83,23 @@ namespace NoiseMixer
             this.maxDropletLifetime = maxDropletLifetime;
             this.initialWaterVolume = initialWaterVolume;
             this.initialSpeed = initialSpeed;
+
+            InitializeBrushIndices();
+
         }
 
-        public void SetSeed(int newSeed)
+        /// <summary>
+        /// Implements the erosion 
+        /// </summary>
+        /// <param name="map">The data set to erode</param>
+        /// <param name="numIterations">The Amount of times to erode</param>
+        /// <param name="random">The Randomness to use</param>
+        public void Erode(double[] map, uint numIterations, Random random)
         {
-            // seed = newSeed;
-            random = new Random(newSeed);
-        }
+          
+            for (int i = 0; i < numIterations; i++)
+            {
 
-
-        public void Erode(double[] map, uint numIterations)
-        {
-            Parallel.For(0, numIterations, iterate =>
-           {
                // Creates the droplet at a random X and Y on the map
                double posX = (double)random.NextDouble() * mapSizeX - 1;
                double posY = (double)random.NextDouble() * mapSizeY - 1;
@@ -191,7 +183,7 @@ namespace NoiseMixer
                    speed = Math.Sqrt(speed * speed + Math.Abs(deltaHeight) * gravity);
                    water *= (1 - evaporateSpeed);
                }
-           });
+            }
         }
 
 

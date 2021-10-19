@@ -32,8 +32,6 @@ namespace NoiseMixer
         const string ConflictErrMes = "Conflicting Operations: trying to run a main thread computation while also running" +
                               " one on background threads. Noise mixer can not take this action and must wait until background threads are finished.";
 
-        HydraulicErosion hydraulicErosion;
-        int iterations;
 
         /// <summary>
         /// A list to hold each step of the Noise Mixer actions as outlined by the user.
@@ -204,7 +202,7 @@ namespace NoiseMixer
         /// Tier the current noise layer to the nearest tier. The Amount of tiers will be equally spread from (-1,1).
         /// </summary>
         /// <param name="TierAmounts">The amount of tiers to create, the more tiers the smaller they will be.</param>
-        /// <param name="Mask">The amount of effect tiering the noise should have on the noise being tiered. 0 is full effect through 1 which is no effect</param>
+        /// <param name="EffectAmount">The amount of effect tiering the noise should have on the noise being tiered. 0 is full effect through 1 which is no effect</param>
         public void Tier(int TierAmounts, double EffectAmount)
         {
             Actions.Add(new TierNoise((uint)TierAmounts, Math.Clamp(EffectAmount, 0, 1), this));
@@ -256,18 +254,23 @@ namespace NoiseMixer
                     layer.setup();
                 }
 
-                for (int x = 0; x < currentLayerValues.GetLength(0); x++)
+                if (Actions[action] is PerPixelMixerActions actionLayer)
                 {
-                    for (int y = 0; y < currentLayerValues.GetLength(1); y++)
+                    for (int x = 0; x < currentLayerValues.GetLength(0); x++)
                     {
-                        Actions[action].ExecuteCommand((uint)x, (uint)y);
+                        for (int y = 0; y < currentLayerValues.GetLength(1); y++)
+                        {
+                            actionLayer.ExecuteCommand((uint)x, (uint)y);
+                        }
                     }
                 }
+                if (Actions[action] is PerLayerMixerActions Layer)
+                {
+                    Layer.ExecuteLayerCommand(0);
+
+                }
+
             }
-
-            if (hydraulicErosion != null)
-                DoHydraulicErosion();
-
 
             if (NormalizeReturn)
                 return NormalizeCurrentLayerValues();
@@ -295,17 +298,23 @@ namespace NoiseMixer
                     layer.setup();
                 }
 
-                for (int x = 0; x < currentLayerValues.GetLength(0); x++)
+                if (Actions[action] is PerPixelMixerActions actionLayer)
                 {
-                    for (int y = 0; y < currentLayerValues.GetLength(1); y++)
+                    for (int x = 0; x < currentLayerValues.GetLength(0); x++)
                     {
-                        Actions[action].ExecuteCommand((uint)x, (uint)y);
+                        for (int y = 0; y < currentLayerValues.GetLength(1); y++)
+                        {
+                            actionLayer.ExecuteCommand((uint)x, (uint)y);
+                        }
                     }
                 }
-            }
+                if (Actions[action] is PerLayerMixerActions Layer)
+                {
+                    Layer.ExecuteLayerCommand(0);
 
-            if (hydraulicErosion != null)
-                DoHydraulicErosion();
+                }
+
+            }
 
             return DoubleToFloat(NormalizeReturn);
 
@@ -375,9 +384,8 @@ namespace NoiseMixer
         /// </summary>
         public void HydraulicErosion(int Iterations)
         {
-            iterations = Iterations;
-            hydraulicErosion = new HydraulicErosion((uint)currentLayerValues.GetLength(0), (uint)currentLayerValues.GetLength(1));
 
+            HydraulicErosion(Iterations, new Random().Next());
         }
 
         /// <summary>
@@ -386,8 +394,10 @@ namespace NoiseMixer
         /// <param name="Seed">The Seed to be used for the hydraulic erosion randomness</param>
         public void HydraulicErosion(int Iterations, int Seed)
         {
-            iterations = Iterations;
-            hydraulicErosion = new HydraulicErosion((uint)currentLayerValues.GetLength(0), (uint)currentLayerValues.GetLength(1), Seed);
+            MixerHydraulicErosion hydraulicErosion = new MixerHydraulicErosion((uint)Iterations, Seed, new HydraulicErosion((uint)currentLayerValues.GetLength(0), (uint)currentLayerValues.GetLength(1)), this);
+
+            Actions.Add(hydraulicErosion);
+            Actions.Add(new MixerAddHydraulicErosionToValues(hydraulicErosion, this));
 
         }
 
@@ -410,23 +420,26 @@ namespace NoiseMixer
                                 double MinSedimentCapacity = 0.01f, double ErodeSpeed = 0.3f, double DepositSpeed = 0.3f, double EvaporateSpeed = 0.01f,
                                 double Gravity = 4, double MaxDropletLifetime = 30, double InitialWaterVolume = 1, double InitialSpeed = 1)
         {
-            iterations = Iterations;
-            hydraulicErosion = new HydraulicErosion((uint)currentLayerValues.GetLength(0), (uint)currentLayerValues.GetLength(1), Seed, ErosionRadius, Inertia, SedimentCapacityFactor,
+            HydraulicErosion hydraulicErosion = new HydraulicErosion((uint)currentLayerValues.GetLength(0), (uint)currentLayerValues.GetLength(1), ErosionRadius, Inertia, SedimentCapacityFactor,
                                                     MinSedimentCapacity, ErodeSpeed, DepositSpeed, EvaporateSpeed, Gravity, MaxDropletLifetime, InitialWaterVolume, InitialSpeed);
 
+            MixerHydraulicErosion mixerHydraulic = new MixerHydraulicErosion((uint)Iterations, Seed, hydraulicErosion, this);
+
+            Actions.Add(mixerHydraulic);
+            Actions.Add(new MixerAddHydraulicErosionToValues(mixerHydraulic, this));
+
         }
+
+
 
         /// <summary>
-        /// Remove the hydraulic erosion effect from the mixer.
+        /// Adds a smoothing layer to the mixer.
         /// </summary>
-        public void HydraulicErosionRemove()
-        {
-            hydraulicErosion = null;
-        }
-
+        /// <param name="FilterSize">The size of the surrounding area to take in to account when smoothing. </param>
+        /// <param name="EffectAmount">The amount of effect smoothing the noise should have on the mixer. 0 is full effect through 1 which is no effect</param>
         public void SmoothValues(int FilterSize, double EffectAmount)
         {
-            Actions.Add(new MixerSmooth(FilterSize, EffectAmount, this));
+            Actions.Add(new MixerSmooth(FilterSize, Math.Clamp(EffectAmount, 0, 1), this));
         }
 
         //set up Multi-Threaded calculations. 
@@ -465,10 +478,10 @@ namespace NoiseMixer
 
         }
 
-
+        //start multi-threading
         void StartThreads(int ActionLayerToStartWith)
         {
-           
+
             for (int i = 0; i < threadAmount - 1; i++)
             {
                 MultithreadingJobsHandler.AddJob(new Action<int, uint, Vector2, Vector2, int>(CalculateMixerPart), new object[] { (uint)i, startPoints[i], endPoints[i], ActionLayerToStartWith });
@@ -535,7 +548,7 @@ namespace NoiseMixer
 
             for (int action = actionStartPlace; action < Actions.Count; action++)
             {
-               
+
                 //if is calculation below must be finished
                 if (Actions[action] is ILayersBelowMustBeCalculated layer && layer.areLayersBelowCalculated() == false)
                 {
@@ -549,29 +562,33 @@ namespace NoiseMixer
 
 
                     //free thread 
-                    return;   
+                    return;
 
                 }
-
-
-
-                for (int x = (int)startPos.X; x <= (int)endPos.X; x++)
+                
+                if (Actions[action] is PerPixelMixerActions actionLayer)
                 {
-
-
-                    for (int y = 0; y < currentLayerValues.GetLength(1); y++)
+                  //  UnityEngine.Debug.Log(actionLayer.GetType());
+                    for (int x = (int)startPos.X; x <= (int)endPos.X; x++)
                     {
 
-                        if (x == (int)startPos.X && y < startPos.Y)
-                            continue;
+                        for (int y = 0; y < currentLayerValues.GetLength(1); y++)
+                        {
 
-                        if (x == (int)endPos.X && y > endPos.Y)
-                            break;
+                            if (x == (int)startPos.X && y < startPos.Y)
+                                continue;
 
-                        Actions[action].ExecuteCommand((uint)x, (uint)y);
+                            if (x == (int)endPos.X && y > endPos.Y)
+                                break;
+
+                            actionLayer.ExecuteCommand((uint)x, (uint)y);
+                        }
                     }
                 }
-
+                if (Actions[action] is PerLayerMixerActions Layer)
+                {
+                    Layer.ExecuteLayerCommand(part);
+                }
 
             }
 
@@ -595,9 +612,6 @@ namespace NoiseMixer
 
             if (isFinished)
             {
-                if (hydraulicErosion != null)
-                    DoHydraulicErosion();
-
                 MixerMiddleOfCalculation = false;
             }
         }
@@ -665,29 +679,7 @@ namespace NoiseMixer
             return NormalizeArray;
         }
 
-        private void DoHydraulicErosion()
-        {
-            //1D  array for Erosion, must be Positive value. Add one to keep values scaled
-            double[] OneDCurrentLayer = Array.Make1DArray(AddOneCurrentLayerValues(currentLayerValues));
-
-            hydraulicErosion.Erode(OneDCurrentLayer, (uint)iterations);
-
-            // Minus one to keep values to original scale;
-            double[,] scaledBack = MinusOneCurrentLayerValues(Array.Make2DArray(OneDCurrentLayer, currentLayerValues.GetLength(0), currentLayerValues.GetLength(1)));
-
-
-            for (int x = 0; x < currentLayerValues.GetLength(0); x++)
-            {
-                for (int y = 0; y < currentLayerValues.GetLength(1); y++)
-                {
-                    scaledBack[x, y] = Math.Clamp(scaledBack[x, y], -1, 1);
-                }
-            }
-
-            currentLayerValues = scaledBack;
-
-        }
-
+       
     }
 
     /// <summary>
@@ -695,12 +687,85 @@ namespace NoiseMixer
     /// </summary>
     public partial class NoiseMixer
     {
-
-        private class MixerSmooth : NoiseMixerActions, ILayersBelowMustBeCalculated
+        // <summary>
+        /// A Class to add the Hydraulic Erosion values to current values in the mixer.
+        /// </summary>
+        private class MixerAddHydraulicErosionToValues : PerPixelLayerBelow
         {
-            //multi-threading value
-            bool[] bottomPartCalculated;
+            NoiseMixer mixer;
+            MixerHydraulicErosion erosion;
 
+            double[,] ErosionValues;
+
+            public MixerAddHydraulicErosionToValues( MixerHydraulicErosion Erosion, NoiseMixer noiseMixer)
+            {
+                mixer = noiseMixer;
+
+                erosion = Erosion;
+
+            }
+
+            public override void setup( )
+            {
+
+                ErosionValues = Array.Make2DArray(erosion.ErosionValues, mixer.currentLayerValues.GetLength(0), mixer.currentLayerValues.GetLength(1));
+
+                //bring the values back into (-1,1)
+                ErosionValues = mixer.MinusOneCurrentLayerValues(ErosionValues);
+
+            }
+
+            public override void ExecuteCommand(uint XPos, uint YPos)
+            {
+
+                mixer.currentLayerValues[XPos, YPos] = Math.Clamp( ErosionValues[XPos,YPos], -1,1);
+
+            }
+
+        }
+
+        /// <summary>
+        /// A Class to do Hydraulic Erosion. Does not apply the erosion.
+        /// </summary>
+        private class MixerHydraulicErosion : PerLayerMixerActions
+        {
+            NoiseMixer mixer;
+            uint iterations;
+            double[] erosionValues;
+            int seed;
+
+            HydraulicErosion erosion;
+
+            public double[] ErosionValues { get => erosionValues; set => erosionValues = value; }
+
+            public MixerHydraulicErosion(uint Iterations, int Seed, HydraulicErosion Erosion,  NoiseMixer Mixer)
+            {
+                mixer = Mixer;
+                erosion = Erosion;
+                seed = Seed;
+                iterations = Iterations;
+            }
+
+
+            public override void setup()
+            {
+                erosionValues = Array.Make1DArray(mixer.AddOneCurrentLayerValues( mixer.currentLayerValues));
+            }
+
+            public override void ExecuteLayerCommand(uint part)
+            {
+
+                erosion.Erode(erosionValues, mixer.threadAmount == 0? iterations :(iterations / mixer.threadAmount), new Random(seed + (int)part));
+            }
+
+
+        }
+
+        /// <summary>
+        /// A Class to smooth the current values in the mixer.
+        /// </summary>
+        private class MixerSmooth : PerPixelLayerBelow
+        {
             int filterSize;
             NoiseMixer mixer;
             double effectAmount;
@@ -715,31 +780,6 @@ namespace NoiseMixer
 
             }
 
-            public void setpartFinished(uint partId)
-            {
-                bottomPartCalculated[partId] = true;
-            }
-
-            public bool areLayersBelowCalculated()
-            {
-                bool isFinished = true;
-
-                foreach (bool threadFinished in bottomPartCalculated)
-                {
-                    if (threadFinished == false)
-                    {
-                        isFinished = false;
-                        break;
-                    }
-                }
-
-                return isFinished;
-            }
-
-            public void setupMultiThreadingValues(uint threadAmount)
-            {
-                bottomPartCalculated = new bool[threadAmount];
-            }
 
             public override void ExecuteCommand(uint XPos, uint YPos)
             {
@@ -769,17 +809,16 @@ namespace NoiseMixer
 
             }
 
-            public void setup()
+            public override void setup()
             {
                 savedLowerLayer = mixer.currentLayerValues.Clone() as double[,];
             }
         }
 
-
         /// <summary>
         /// A Class to invert the current values in the mixer.
         /// </summary>
-        private class InvertMixer : NoiseMixerActions
+        private class InvertMixer : PerPixelMixerActions
         {
             NoiseMixer mixer;
 
@@ -797,7 +836,7 @@ namespace NoiseMixer
         /// <summary>
         /// A Class to scale the current values in the mixer.
         /// </summary>
-        private class ScaleMixer : NoiseMixerActions
+        private class ScaleMixer : PerPixelMixerActions
         {
             NoiseMixer mixer;
             double scaleAmount;
@@ -817,7 +856,7 @@ namespace NoiseMixer
         /// <summary>
         /// A Class to shift the current values in the mixer.
         /// </summary>
-        private class ShiftMixer : NoiseMixerActions
+        private class ShiftMixer : PerPixelMixerActions
         {
             NoiseMixer mixer;
             double shiftAmount;
@@ -837,7 +876,7 @@ namespace NoiseMixer
         /// <summary>
         /// A Class to tier the current values in the mixer to the nearest value.
         /// </summary>
-        private class TierNoise : NoiseMixerActions
+        private class TierNoise : PerPixelMixerActions
         {
             NoiseMixer mixer;
 
@@ -1085,7 +1124,7 @@ namespace NoiseMixer
         /// <summary>
         /// A base Layer class to handle generic method between layer types
         /// </summary>
-        public class LayerBase : NoiseMixerActions
+        public class LayerBase : PerPixelMixerActions
         {
             protected NoiseMixer mixer;
 
@@ -1245,7 +1284,7 @@ namespace NoiseMixer
         /// <summary>
         /// A command to overwrite the current values in the mixer.
         /// </summary>
-        public class FillValue : NoiseMixerActions
+        public class FillValue : PerPixelMixerActions
         {
             NoiseMixer mixer;
             double value;
@@ -1268,15 +1307,103 @@ namespace NoiseMixer
         }
 
 
-        public abstract class NoiseMixerActions
+        public class PerPixelLayerBelow : PerPixelMixerActions, ILayersBelowMustBeCalculated
+        {
+            //multi-threading value
+            bool[] bottomPartCalculated;
+
+            public void setpartFinished(uint partId)
+            {
+                bottomPartCalculated[partId] = true;
+            }
+
+            public bool areLayersBelowCalculated()
+            {
+                bool isFinished = true;
+
+                foreach (bool threadFinished in bottomPartCalculated)
+                {
+                    if (threadFinished == false)
+                    {
+                        isFinished = false;
+                        break;
+                    }
+                }
+
+                return isFinished;
+            }
+
+            public void setupMultiThreadingValues(uint threadAmount)
+            {
+                bottomPartCalculated = new bool[threadAmount];
+            }
+
+            public override void ExecuteCommand(uint XPos, uint YPos)
+            {
+                throw new NotImplementedException();
+            }
+
+
+            public virtual void setup()
+            {
+                throw new NotImplementedException();
+            }
+
+           
+        }
+
+        public abstract class PerPixelMixerActions : NoiseMixerActions
         {
             /// <summary>
             /// A command to Execute what ever command is needed.
             /// </summary>
             /// <param name="XPos"></param>
             /// <param name="YPos"></param>
-            /// <param name="mixer"></param>
             public abstract void ExecuteCommand(uint XPos, uint YPos);
+
+        }
+
+        public class PerLayerMixerActions : NoiseMixerActions, ILayersBelowMustBeCalculated
+        {
+            //multi-threading value
+            bool[] bottomPartCalculated;
+
+            public bool areLayersBelowCalculated()
+            {
+                bool isFinished = true;
+
+                foreach (bool threadFinished in bottomPartCalculated)
+                {
+                    if (threadFinished == false)
+                    {
+                        isFinished = false;
+                        break;
+                    }
+                }
+
+                return isFinished;
+            }
+
+            public void setupMultiThreadingValues(uint threadAmount)
+            {
+                bottomPartCalculated = new bool[threadAmount];
+            }
+
+
+            public virtual void ExecuteLayerCommand(uint part) { }
+
+            public void setpartFinished(uint partId)
+            {
+                bottomPartCalculated[partId] = true;
+            }
+
+            public virtual void setup() {  }
+
+
+        }
+
+        public abstract class NoiseMixerActions
+        {
 
         }
 
@@ -1292,6 +1419,8 @@ namespace NoiseMixer
             void setup();
 
         }
+
+
 
     }
 

@@ -1,10 +1,10 @@
 # 2D-Noise-Mixer
 
-The 2D noise mixer is designed to make mixing different noise types quickly with only a few lines of code. Highly commented and easy to use, this system types to be non-platform specific. 
+The 2D noise mixer is designed to make mixing different noise types quickly with only a few lines of code. Highly commented and easy to use, this system tires to be non-platform specific. 
 
 ## Description
 
-This 2D noise mixer will let the user have a high degree of control over the different noise layers, and over the mixer itself. A list of noises are provided as well as a list of manipulations including masking between layers, shifting, scaling, and inverting. The noise is calculated on the CPU and can be off loaded onto a background thread is necessary. New noises are easy to implement with the INoise interface, and can be up and running in short while. 
+This 2D noise mixer will let the user have a high degree of control over the different noise layers, and over the mixer itself. A list of noises are provided as well as a list of manipulations including masking between layers, shifting, scaling, and inverting. The noise is calculated on the CPU and can be off loaded onto a background thread as necessary. New noises are easy to implement with the INoise interface, and can be up and running in a short while. 
 
 A list of already added noises are 
 * Perlin Noise 
@@ -20,7 +20,7 @@ A list of already added noises are
 
 ## Some Example Output
 
-##### Using Unity: 2D Mixed Noise applied as a texture to a plain on the left, 2D Mixed Noise applied to the terrain system.
+##### Using Unity: 2D Mixed Noise applied as a texture to a plain on the left, 2D Mixed Noise applied to the terrain system on the right.
 
 <p align="center">
  <img style="display: flex; flex-wrap: wrap;" src = "zRead%20Me%20Images/Capture%201.png" width="25%">
@@ -117,7 +117,7 @@ noiseMixer.ApplyOnOtherThreads(uint threadsAmount);
 
 ```
 
-* If the calculations where done on a background thread, or was computed and the user want to retrieve the values without doing the calculations again GetCalculations() can be called to retrieve the results.  
+* If the calculations were done on a background thread, or the mixer was already computed and the user want to retrieve the values without doing the calculations again GetCalculations() can be called to retrieve the results.  
 
 ```C#
 noiseMixer. GetCalculations(out double[,] Results, bool normalize); // for double array
