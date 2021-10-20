@@ -19,6 +19,7 @@ namespace NoiseMixer
         /// A "Default Constructor" for Ridged Noise Multi-fractal. Only meant for quick Billow Noise, not suitable for most use cases.
         /// </summary>
         /// <param name="Octaves">The number of levels of detail you want you noise to have. </param>
+        /// <param name="offset">/// The offset value to bring Ridged Noise Multi-fractal back into the (-1, 1) range.</param>
         public RidgedNoiseMultifractal(uint Octaves, double offset) : this(Octaves,  offset, false)
         {
 
@@ -28,6 +29,7 @@ namespace NoiseMixer
         /// A constructor for Billow Noise. Sets up the Ridged Noise Multi-fractal, to use Perlin noise for its noise source.
         /// </summary>
         /// <param name="Octaves">The number of levels of detail you want you noise to have. </param>
+        /// <param name="offset">/// The offset value to bring Ridged Noise Multi-fractal back into the (-1, 1) range.</param>
         /// <param name="NormalizeReturn">The return data values be between (0,1) if true, or between (-1,1) if false.</param> 
         /// <param name="Persistence">The number that determines how much each octave contributes to the overall shape.</param>
         /// <param name="Lacunarity">The number that determines how much detail is added or removed at each octave.</param>
@@ -44,6 +46,7 @@ namespace NoiseMixer
         /// </summary>
         /// <param name="NoiseType">The type of noise to use from the NoiseMixer Library, Perlin, Simplex, etc. </param>
         /// <param name="Octaves">The number of levels of detail you want you noise to have. </param>
+        /// <param name="offset">/// The offset value to bring Ridged Noise Multi-fractal back into the (-1, 1) range.</param>
         /// <param name="NormalizeReturn">The return data values be between (0,1) if true, or between (-1,1) if false.</param> 
         /// <param name="Persistence">The number that determines how much each octave contributes to the overall shape.</param>
         /// <param name="Lacunarity">The number that determines how much detail is added or removed at each octave.</param>

@@ -83,7 +83,7 @@ noiseMixer.NewCombineLayer(new PerlinNoise(seed), ScaleNoise).Scale(float ScaleA
 noiseMixer.NewCombineLayer(new PerlinNoise(seed), ScaleNoise).Shift(float ShiftAmount);
 ```
 
-*Or strung together: 
+* Or strung together: 
 
 ```C#
 noiseMixer.NewCombineLayer(new PerlinNoise(seed), ScaleNoise).LayerMask(float MaskAmount).Shift(float ShiftAmount).Scale(float ScaleAmount).Inverse();
