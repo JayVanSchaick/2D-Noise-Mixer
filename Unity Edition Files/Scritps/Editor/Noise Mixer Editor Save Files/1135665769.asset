@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d73b358a91393242b7f47bf13609012, type: 3}
-  m_Name: -1763401763
+  m_Name: 1135665769
   m_EditorClassIdentifier: 
-  Height: 513
-  Width: 513
-  StartingValue: -1
+  Height: 512
+  Width: 512
+  StartingValue: 0
   Layers:
   - Disable: 0
     layerNum: 1
@@ -45,7 +45,7 @@ MonoBehaviour:
       shift: 0
       shiftAmount: 0
       scale: 1
-      scaleAmount: 3
+      scaleAmount: 2.5
       hasMask: 0
       MaskFloat: 0
       backgroundImage: 
@@ -60,7 +60,7 @@ MonoBehaviour:
         evaluateType: 0
       fractionalType:
         fractionalNoiseType: 3
-        octaves: 8
+        octaves: 2
         persistence: 0.5
         lacunarity: 2
         initFrequency: 1
@@ -165,10 +165,10 @@ MonoBehaviour:
         evaluateType: 0
       fractionalTypeMask:
         fractionalNoiseType: 0
-        octaves: 0
-        persistence: 0
-        lacunarity: 0
-        initFrequency: 0
+        octaves: 2
+        persistence: 0.5
+        lacunarity: 2
+        initFrequency: 1
         normalizeReturn: 0
         offset: 0
         gradientNoise: 0

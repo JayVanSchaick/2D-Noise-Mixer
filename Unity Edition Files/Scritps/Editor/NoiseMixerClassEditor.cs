@@ -29,10 +29,27 @@ public class NoiseMixerClassEditor : Editor
     public void OnEnable()
     {
 
+        //if is prefab break link to save file.
+        if (PrefabUtility.IsPartOfPrefabAsset(((NoiseMixerClass)target)))
+        {
 
-        GetSaveFile();
+            SerializedObject SO = new SerializedObject(target);
+            SerializedProperty property = SO.FindProperty("ID");
+            property.intValue = 0;
 
-        LoadData();
+            SO.ApplyModifiedProperties();
+
+            return;
+
+        }
+        else
+        {
+            GetSaveFile();
+
+            LoadData();
+        }
+
+
 
 
     }
@@ -97,8 +114,11 @@ public class NoiseMixerClassEditor : Editor
 
         GUILayout.EndVertical();
 
-
-        SaveData();
+        if (PrefabUtility.IsPartOfPrefabAsset(((NoiseMixerClass)target)) == false)
+        {
+            SaveData();
+        }
+        
 
     }
 
@@ -1684,9 +1704,6 @@ public class NoiseMixerClassEditor : Editor
 
 
         }
-
-
-       
 
     }
 
