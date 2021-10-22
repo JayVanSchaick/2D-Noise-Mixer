@@ -70,7 +70,6 @@ namespace NoiseMixer
 
         }
 
-
         /// <summary>
         /// The Constructor, will initialize the first layer with a value of zero.
         /// </summary>
@@ -380,8 +379,9 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Add hydraulic erosion to be applied after all of the noise layers are computed. 
+        /// Add an hydraulic erosion layer to be applied to all layer beneath it. 
         /// </summary>
+        /// <param name="Iterations">The amount of times to run the erosion over the layers</param>
         public void HydraulicErosion(int Iterations)
         {
 
@@ -389,8 +389,9 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Add hydraulic erosion to be applied after all of the noise layers are computed.
+        /// Add an hydraulic erosion layer to be applied to all layer beneath it. 
         /// </summary>
+        /// <param name="Iterations">The amount of times to run the erosion over the layers</param>
         /// <param name="Seed">The Seed to be used for the hydraulic erosion randomness</param>
         public void HydraulicErosion(int Iterations, int Seed)
         {
@@ -402,8 +403,9 @@ namespace NoiseMixer
         }
 
         /// <summary>
-        /// Full control of the hydraulic erosion system, the erosion will be applied after all of the noise layers are computed.
+        /// Full control of the hydraulic erosion system, Add an hydraulic erosion layer to be applied to all layer beneath it. 
         /// </summary>
+        /// <param name="Iterations">The amount of times to run the erosion over the layers</param>
         /// <param name="Seed">The Seed to be used for the hydraulic erosion randomness</param>
         /// <param name="ErosionRadius"></param>
         /// <param name="Inertia"></param>
