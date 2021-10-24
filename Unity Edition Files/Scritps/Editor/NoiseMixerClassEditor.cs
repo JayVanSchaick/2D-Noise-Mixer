@@ -5,16 +5,12 @@ using UnityEditor;
 using NoiseMixer;
 
 [CustomEditor(typeof(NoiseMixerClass))]
-//[System.Serializable]
 public class NoiseMixerClassEditor : Editor
 {
 
     const string SAVE_FOLDER_NAME = "Noise Mixer Editor Save Files";
 
     List<BaseAction> actions = new List<BaseAction>();
-
-    [SerializeField]
-   public int layersAmountHS = 1;
 
     static GUIStyle style = new GUIStyle();
 
@@ -25,6 +21,8 @@ public class NoiseMixerClassEditor : Editor
     int IDSave; //For OnDestroy
 
     NoiseMixerEditorSaves saveFile;
+
+    EditorApplication.CallbackFunction value;
 
     public void OnEnable()
     {
@@ -41,69 +39,13 @@ public class NoiseMixerClassEditor : Editor
             LoadData();
         }
 
-    }
-
-
-    bool StopPrefabAssetSave()
-    {
-
-        if (PrefabUtility.IsPartOfPrefabAsset(((NoiseMixerClass)target)))
-        {
-            SerializedObject SO = new SerializedObject(target);
-
-            SerializedProperty property = SO.FindProperty("ID");
-            property.intValue = 0;
-
-            SO.ApplyModifiedProperties();
-
-            return true;
-
-        }
-
-        return false;
-    }
-
-    void StopDuplicate()
-    {
-
-        if (PrefabUtility.IsPartOfPrefabInstance((NoiseMixerClass)target))
-        {
-            SerializedObject SO = new SerializedObject(target);
-
-            SerializedProperty property = SO.FindProperty("ID");
-
-            NoiseMixerClass[] noiseMixerClasses = GameObject.FindObjectsOfType<NoiseMixerClass>();
-
-            for (int i = 0; i < noiseMixerClasses.Length; i++)
-            {
-
-                if (noiseMixerClasses[i] != (NoiseMixerClass)target)
-                {
-
-                    SerializedObject otherScript = new SerializedObject(noiseMixerClasses[i]);
-
-                    SerializedProperty otherScriptID = otherScript.FindProperty("ID");
-
-                    if (otherScriptID.intValue == property.intValue)
-                    {
-                        property.intValue = 0;
-                        SO.ApplyModifiedProperties();
-                    }
-
-                }
-
-            }
-
-        }
-
+        HotKeySetup();
     }
 
     public override void OnInspectorGUI()
     {
 
         style = new GUIStyle();
-
-       
 
         NoiseMixerClass noiseMixer = (NoiseMixerClass)target;
 
@@ -115,7 +57,7 @@ public class NoiseMixerClassEditor : Editor
         style.padding = new RectOffset(10, 10, 10, 10);
         GUILayout.Label("Noise Mixer", style);
 
-        
+
         if (actions.Count == 0)
         {
             actions.Add(new NewMixer());
@@ -127,31 +69,19 @@ public class NoiseMixerClassEditor : Editor
 
         }
 
-        if (GUILayout.Button("Add New Layer"))
+        if (GUILayout.Button("Add New Layer (Shift + E)"))
         {
             actions.Add(new MixerLayer(actions.Count, this));
         }
 
 
 
-        if (GUILayout.Button("Calculate Noise"))
+        if (GUILayout.Button("Calculate Noise (Shift + Q)"))
         {
 
-            for (int i = 0; i < actions.Count; i++)
-            {
-                actions[i].Code(this);
-            }
-
-           float[,] noiseReturn =  noiseMixer.Mixer.ApplyF(true);
-
-            foreach (INoiseMixerReturn output in ((MonoBehaviour)this.target).gameObject.GetComponents<INoiseMixerReturn>())
-            {
-                output.Return(noiseReturn);
-
-            }
+            Calculate();
 
 
-          
 
         }
 
@@ -161,403 +91,7 @@ public class NoiseMixerClassEditor : Editor
         {
             SaveData();
         }
-        
 
-    }
-
-    //Get or make a save file
-    void GetSaveFile()
-    {
-
-        SerializedObject SO = new SerializedObject(target);
-
-
-        SerializedProperty property = SO.FindProperty("ID");
-        if (property.intValue == 0)
-        {
-            property.intValue = (int)System.DateTime.Now.Ticks;
-        }
-
-        SO.ApplyModifiedProperties();
-
-        IDSave = property.intValue;
-
-        MonoScript ms = MonoScript.FromScriptableObject(this);
-        string ScriptFilePath = AssetDatabase.GetAssetPath(ms);
-
-
-        string FilePath = ScriptFilePath.TrimEnd((this.ToString() + ".cs").ToCharArray());
-
-        if (AssetDatabase.IsValidFolder(FilePath + SAVE_FOLDER_NAME) == false)
-        {
-            AssetDatabase.CreateFolder(FilePath.TrimEnd('/'), SAVE_FOLDER_NAME);
-
-            saveFile = ScriptableObject.CreateInstance<NoiseMixerEditorSaves>();
-
-            AssetDatabase.CreateAsset(saveFile, FilePath + SAVE_FOLDER_NAME + "/" + property.intValue + ".asset");
-            AssetDatabase.SaveAssets();
-        }
-        else if (AssetDatabase.FindAssets(property.intValue.ToString()).Length == 0)
-        {
-            saveFile = ScriptableObject.CreateInstance<NoiseMixerEditorSaves>();
-
-            AssetDatabase.CreateAsset(saveFile, FilePath + SAVE_FOLDER_NAME + "/" + property.intValue + ".asset");
-            AssetDatabase.SaveAssets();
-
-        }
-        else
-        {
-
-            saveFile = (NoiseMixerEditorSaves)AssetDatabase.LoadAssetAtPath(FilePath + SAVE_FOLDER_NAME + "/" + property.intValue + ".asset", typeof(NoiseMixerEditorSaves));
-
-        }
-
-
-
-    }
-
-    void SaveData()
-    {
-
-
-        NewMixer mixer = (NewMixer)actions[0];
-
-        saveFile.Height = mixer.YResolution;
-        saveFile.Width = mixer.XResolution;
-
-        saveFile.StartingValue = mixer.FillValue;
-
-        saveFile.Layers = new NoiseMixerEditorSaves.LayerData[actions.Count-1];
-
-        
-
-        for (int i = 1; i < actions.Count; i++)
-        {
-            MixerLayer layer = (MixerLayer)actions[i];
-
-            saveFile.Layers[i - 1] = new NoiseMixerEditorSaves.LayerData
-            {
-                Disable = layer.Disable,
-                layerNum = layer.layerNum,
-
-                typeLayer = (int)layer.mixerLayer,
-                seedType = (int)layer.seedType,
-                iteration = layer.iteration,
-                seed = layer.seed,
-                ErosionRadius = layer.ErosionRadius,
-                Inertia = layer.Inertia,
-                SedimentCapacityFactor = layer.SedimentCapacityFactor,
-                MinSedimentCapacity = layer.MinSedimentCapacity,
-                ErodeSpeed = layer.ErodeSpeed,
-                DepositSpeed = layer.DepositSpeed,
-                EvaporateSpeed = layer.EvaporateSpeed,
-                Gravity = layer.Gravity,
-                MaxDropletLifetime = layer.MaxDropletLifetime,
-                InitialWaterVolume = layer.InitialWaterVolume,
-                InitialSpeed = layer.InitialSpeed,
-                effectAmount = layer.effectAmount,
-                amountOfTiers = layer.amountOfTiers,
-                shiftAmount = layer.shiftAmount,
-                scaleAmount = layer.scaleAmount,
-                filterSize = layer.filterSize,
-
-                mainNoise = new NoiseMixerEditorSaves.NoiseType(),
-            };
-
-
-
-
-            saveFile.Layers[i - 1].mainNoise.NoiseScale = layer.layer.scaleNoise;
-            saveFile.Layers[i - 1].mainNoise.noiseType = layer.layer.noiseType;
-
-          
-                SaveNoiseType(layer.layer.noiseType, layer.layer.noise, i - 1, true);
-
-            saveFile.Layers[i - 1].mainNoise.Inverse = layer.layer.Inverse;
-            saveFile.Layers[i - 1].mainNoise.shift = layer.layer.shift;
-            saveFile.Layers[i - 1].mainNoise.shiftAmount = layer.layer.shiftAmount;
-            saveFile.Layers[i - 1].mainNoise.scale = layer.layer.scale;
-            saveFile.Layers[i - 1].mainNoise.scaleAmount = layer.layer.scaleAmount;
-
-            saveFile.Layers[i - 1].mainNoise.hasMask = layer.layer.hasMask;
-            saveFile.Layers[i - 1].mainNoise.maskType = layer.layer.maskType;
-
-            saveFile.Layers[i - 1].mainNoise.MaskFloat = layer.layer.MaskFloat;
-            saveFile.Layers[i - 1].mainNoise.backgroundImage = AssetDatabase.GetAssetPath(layer.layer.backgroundImage);
-            saveFile.Layers[i - 1].mainNoise.noiseMaskScale = layer.layer.noiseMaskScale;
-            saveFile.Layers[i - 1].mainNoise.noiseMaskType = layer.layer.noiseMaskType;
-
-            if (layer.layer.noiseMask != null)
-                SaveNoiseType(layer.layer.noiseMaskType , layer.layer.noiseMask, i - 1, false);
-
-        }
-
-            EditorUtility.SetDirty(saveFile);
-    }
-
-    void SaveNoiseType(AllNoiseTypes noiseType, BaseAction noise, int LayerNum, bool MainNoise )
-    {
-
- 
-        if (noiseType == AllNoiseTypes.FractalBrownianMotion || noiseType == AllNoiseTypes.BillowNoise ||
-            noiseType == AllNoiseTypes.RidgedNoiseMultifractal || noiseType == AllNoiseTypes.RidgeNoise)
-        {
-
-           NoiseMixerEditorSaves.FractionalType noiseSave = new NoiseMixerEditorSaves.FractionalType();
-
-            if (MainNoise)
-                saveFile.Layers[LayerNum].mainNoise.fractionalType = noiseSave;
-            else
-                saveFile.Layers[LayerNum].mainNoise.fractionalTypeMask = noiseSave;
-
-
-            FractalType fractalType = (FractalType)noise;
-            noiseSave.fractionalNoiseType = (int)fractalType.fractalNoises;
-            noiseSave.octaves = fractalType.octaves;
-            noiseSave.persistence = fractalType.persistence;
-            noiseSave.lacunarity = fractalType.lacunarity;
-            noiseSave.initFrequency = fractalType.initFrequency;
-            noiseSave.normalizeReturn = fractalType.normalizeReturn;
-            noiseSave.offset = fractalType.offset;
-            
-
-            NoiseMixerEditorSaves.GradientType baseNoiseSave = new NoiseMixerEditorSaves.GradientType();
-
-
-            if (MainNoise)
-                saveFile.Layers[LayerNum].mainNoise.gradientType = baseNoiseSave;
-            else
-                saveFile.Layers[LayerNum].mainNoise.gradientTypeMask = baseNoiseSave;
-
-            GradientNoiseType gradientNoiseType = (GradientNoiseType)fractalType.noise;
-
-            baseNoiseSave.gradientNoiseType = (int)gradientNoiseType.gradientNoise;
-            baseNoiseSave.seedType = (int)gradientNoiseType.seedType;
-            baseNoiseSave.seed = gradientNoiseType.seed;
-            baseNoiseSave.evaluateType = gradientNoiseType.evaluateType;
-            baseNoiseSave.Normalized = gradientNoiseType.Normalize;
-        }
-
-        if (noiseType == AllNoiseTypes.PerlinNoise || noiseType == AllNoiseTypes.SimplexNoise ||
-           noiseType == AllNoiseTypes.OpenSimplexNoise || noiseType == AllNoiseTypes.OpenSimplexNoise2S)
-        {
-
-            NoiseMixerEditorSaves.GradientType noiseSave = new NoiseMixerEditorSaves.GradientType();
-
-
-            if (MainNoise)
-                saveFile.Layers[LayerNum].mainNoise.gradientType = noiseSave;
-            else
-                saveFile.Layers[LayerNum].mainNoise.gradientTypeMask = noiseSave;
-
-            GradientNoiseType gradientNoiseType = (GradientNoiseType)noise;
-
-            noiseSave.gradientNoiseType = (int)gradientNoiseType.gradientNoise;
-            noiseSave.seedType = (int)gradientNoiseType.seedType;
-            noiseSave.seed = gradientNoiseType.seed;
-            noiseSave.evaluateType = gradientNoiseType.evaluateType;
-            noiseSave.Normalized = gradientNoiseType.Normalize;
-        }
-
-
-        if (noiseType == AllNoiseTypes.Voronoi || noiseType == AllNoiseTypes.Worley)
-        {
-
-            NoiseMixerEditorSaves.VoronoiType noiseSave = new NoiseMixerEditorSaves.VoronoiType();
-
-            if (MainNoise)
-                saveFile.Layers[LayerNum].mainNoise.voronoiType = noiseSave;
-            else
-                saveFile.Layers[LayerNum].mainNoise.voronoiTypeMask = noiseSave;
-
-
-            VoronoiNoiseTypes voronoiNoiseType = (VoronoiNoiseTypes)noise;
-
-            noiseSave.VoronoiNoiseType = (int)voronoiNoiseType.voronoiType;
-            noiseSave.pointsAmount = voronoiNoiseType.pointsAmount;
-            noiseSave.xPointsAmount = voronoiNoiseType.xPointsAmount;
-            noiseSave.yPointsAmount = voronoiNoiseType.yPointsAmount;
-            noiseSave.SeedType = voronoiNoiseType.seedType;
-            noiseSave.seed = voronoiNoiseType.seed;
-            noiseSave.pointPlacement = voronoiNoiseType.pointPlacement;
-            noiseSave.distance = voronoiNoiseType.distance;
-        }
-
-    }
-
-    void LoadNoiseType(AllNoiseTypes noiseType, BaseAction noise, int LayerNum, bool MainNoise)
-    {
-
-
-        if ((noiseType == AllNoiseTypes.FractalBrownianMotion || noiseType == AllNoiseTypes.BillowNoise ||
-            noiseType == AllNoiseTypes.RidgedNoiseMultifractal || noiseType == AllNoiseTypes.RidgeNoise))
-        {
-
-            NoiseMixerEditorSaves.FractionalType noiseSave;
-
-            if (MainNoise)
-                noiseSave = saveFile.Layers[LayerNum].mainNoise.fractionalType;
-            else
-                noiseSave = saveFile.Layers[LayerNum].mainNoise.fractionalTypeMask;
-
-            if (noiseSave == null) return;
-
-            FractalType fractalType = (FractalType)noise;
-            fractalType.fractalNoises = (FractalType.FractalNoises)noiseSave.fractionalNoiseType;
-            fractalType.octaves = noiseSave.octaves;
-            fractalType.persistence = noiseSave.persistence;
-            fractalType.lacunarity = noiseSave.lacunarity;
-            fractalType.initFrequency = noiseSave.initFrequency;
-            fractalType.normalizeReturn = noiseSave.normalizeReturn;
-            fractalType.offset = noiseSave.offset;
-
-
-            NoiseMixerEditorSaves.GradientType baseNoiseSave;
-
-            if (MainNoise)
-                baseNoiseSave =saveFile.Layers[LayerNum].mainNoise.gradientType ;
-            else
-                baseNoiseSave = saveFile.Layers[LayerNum].mainNoise.gradientTypeMask ;
-
-            fractalType.gradientNoises = (GradientNoiseType.GradientNoises)baseNoiseSave.gradientNoiseType;
-
-            GradientNoiseType gradientNoiseType = (GradientNoiseType)fractalType.noise;
-
-            gradientNoiseType.gradientNoise = (GradientNoiseType.GradientNoises)baseNoiseSave.gradientNoiseType;
-            gradientNoiseType.seedType = (SeedType)baseNoiseSave.seedType;
-            gradientNoiseType.seed = baseNoiseSave.seed;
-            gradientNoiseType.evaluateType = baseNoiseSave.evaluateType;
-            gradientNoiseType.Normalize = baseNoiseSave.Normalized;
-        }
-
-        if (noiseType == AllNoiseTypes.PerlinNoise || noiseType == AllNoiseTypes.SimplexNoise ||
-           noiseType == AllNoiseTypes.OpenSimplexNoise || noiseType == AllNoiseTypes.OpenSimplexNoise2S)
-        {
-
-            NoiseMixerEditorSaves.GradientType noiseSave;
-
-            if (MainNoise)
-                noiseSave = saveFile.Layers[LayerNum].mainNoise.gradientType;
-            else
-                noiseSave = saveFile.Layers[LayerNum].mainNoise.gradientTypeMask;
-
-            if (noiseSave == null) return;
-
-            GradientNoiseType gradientNoiseType = (GradientNoiseType)noise;
-
-            gradientNoiseType.gradientNoise = (GradientNoiseType.GradientNoises)noiseSave.gradientNoiseType;
-            gradientNoiseType.seedType = (SeedType)noiseSave.seedType;
-            gradientNoiseType.seed = noiseSave.seed;
-            gradientNoiseType.evaluateType = noiseSave.evaluateType;
-            gradientNoiseType.Normalize = noiseSave.Normalized;
-
-        }
-
-
-        if (noiseType == AllNoiseTypes.Voronoi || noiseType == AllNoiseTypes.Worley)
-        {
-
-            NoiseMixerEditorSaves.VoronoiType noiseSave;
-
-            if (MainNoise)
-                noiseSave = saveFile.Layers[LayerNum].mainNoise.voronoiType;
-            else
-                noiseSave = saveFile.Layers[LayerNum].mainNoise.voronoiTypeMask;
-
-            if (noiseSave == null) return;
-
-            VoronoiNoiseTypes voronoiNoiseType = (VoronoiNoiseTypes)noise;
-
-            voronoiNoiseType.voronoiType = (VoronoiNoiseTypes.VoronoiType)noiseSave.VoronoiNoiseType;
-            voronoiNoiseType.pointsAmount = noiseSave.pointsAmount;
-            voronoiNoiseType.xPointsAmount = noiseSave.xPointsAmount;
-            voronoiNoiseType.yPointsAmount = noiseSave.yPointsAmount;
-            voronoiNoiseType.seedType = noiseSave.SeedType;
-            voronoiNoiseType.seed = noiseSave.seed;
-            voronoiNoiseType.pointPlacement = noiseSave.pointPlacement;
-            voronoiNoiseType.distance = noiseSave.distance;
-        }
-
-    }
-
-    void LoadData()
-    {
-
-        NewMixer mixer = new NewMixer();
-
-        actions.Add(mixer);
-
-        mixer.YResolution = saveFile.Height;
-        mixer.XResolution = saveFile.Width;
-        mixer.FillValue = saveFile.StartingValue;
-
-
-        if(saveFile.Layers != null)
-        for (int i = 1; i <= saveFile.Layers.Length; i++)
-        {
-
-                MixerLayer layer = new MixerLayer(i, this);
-
-                actions.Add(layer);
-
-                layer.Disable = saveFile.Layers[i - 1].Disable;
-                layer.layerNum = saveFile.Layers[i - 1].layerNum;
-
-                layer.mixerLayer = (MixerLayer.MixerLayerTypes)saveFile.Layers[i - 1].typeLayer;
-
-                layer.seedType = (SeedType)saveFile.Layers[i - 1].seedType;
-                layer.iteration = saveFile.Layers[i - 1].iteration;
-                layer.seed = saveFile.Layers[i - 1].seed;
-                layer.ErosionRadius = saveFile.Layers[i - 1].ErosionRadius;
-                layer.Inertia = saveFile.Layers[i - 1].Inertia;
-                layer.SedimentCapacityFactor = saveFile.Layers[i - 1].SedimentCapacityFactor;
-                layer.MinSedimentCapacity = saveFile.Layers[i - 1].MinSedimentCapacity;
-                layer.ErodeSpeed = saveFile.Layers[i - 1].ErodeSpeed;
-                layer.DepositSpeed = saveFile.Layers[i - 1].DepositSpeed;
-                layer.EvaporateSpeed = saveFile.Layers[i - 1].EvaporateSpeed;
-                layer.Gravity = saveFile.Layers[i - 1].Gravity;
-                layer.MaxDropletLifetime = saveFile.Layers[i - 1].MaxDropletLifetime;
-                layer.InitialWaterVolume = saveFile.Layers[i - 1].InitialWaterVolume;
-                layer.InitialSpeed = saveFile.Layers[i - 1].InitialSpeed;
-                layer.effectAmount = saveFile.Layers[i - 1].effectAmount;
-                layer.amountOfTiers = saveFile.Layers[i - 1].amountOfTiers;
-                layer.shiftAmount = saveFile.Layers[i - 1].shiftAmount;
-                layer.scaleAmount = saveFile.Layers[i - 1].scaleAmount;
-                layer.filterSize = saveFile.Layers[i - 1].filterSize;
-
-                if (saveFile.Layers[i - 1].mainNoise != null)
-                {
-
-                    layer.layer.scaleNoise =  saveFile.Layers[i - 1].mainNoise.NoiseScale;
-                    layer.layer.noiseType = saveFile.Layers[i - 1].mainNoise.noiseType;
-                    layer.layer.noise = GetNoiseType(saveFile.Layers[i - 1].mainNoise.noiseType);
-
-                    LoadNoiseType(saveFile.Layers[i - 1].mainNoise.noiseType, layer.layer.noise, i - 1, true);
-
-                    layer.layer.Inverse = saveFile.Layers[i - 1].mainNoise.Inverse;
-                    layer.layer.shift = saveFile.Layers[i - 1].mainNoise.shift;
-                    layer.layer.shiftAmount = saveFile.Layers[i - 1].mainNoise.shiftAmount;
-                    layer.layer.scale = saveFile.Layers[i - 1].mainNoise.scale;
-                    layer.layer.scaleAmount = saveFile.Layers[i - 1].mainNoise.scaleAmount;
-
-                    layer.layer.hasMask = saveFile.Layers[i - 1].mainNoise.hasMask;
-                    layer.layer.maskType = saveFile.Layers[i - 1].mainNoise.maskType;
-
-                    layer.layer.MaskFloat = saveFile.Layers[i - 1].mainNoise.MaskFloat;
-                    layer.layer.backgroundImage = (Texture2D)AssetDatabase.LoadAssetAtPath(saveFile.Layers[i - 1].mainNoise.backgroundImage, typeof(Texture2D));
-
-                    layer.layer.noiseMask = GetNoiseType(saveFile.Layers[i - 1].mainNoise.noiseMaskType);
-
-                    if (layer.layer.noiseMask != null)
-                        LoadNoiseType(saveFile.Layers[i - 1].mainNoise.noiseMaskType, layer.layer.noiseMask, i - 1, false);
-
-                    layer.layer.noiseMaskScale = saveFile.Layers[i - 1].mainNoise.noiseMaskScale;
-                    layer.layer.noiseMaskType = saveFile.Layers[i - 1].mainNoise.noiseMaskType;
-
-                }
-                
-
-        }
 
     }
 
@@ -1718,12 +1252,521 @@ public class NoiseMixerClassEditor : Editor
         {
             case SeedType.Random:
 
-                return new System.Random().Next();
+                return new System.Random().Next(int.MaxValue);
             case SeedType.Inputed:
                 return val;
             default:
                 return new System.Random().Next();
         }
+
+    }
+
+    //Get or make a save file
+    void GetSaveFile()
+    {
+
+        SerializedObject SO = new SerializedObject(target);
+
+
+        SerializedProperty property = SO.FindProperty("ID");
+        if (property.intValue == 0)
+        {
+            property.intValue = (int)System.DateTime.Now.Ticks;
+        }
+
+        SO.ApplyModifiedProperties();
+
+        IDSave = property.intValue;
+
+        MonoScript ms = MonoScript.FromScriptableObject(this);
+        string ScriptFilePath = AssetDatabase.GetAssetPath(ms);
+
+
+        string FilePath = ScriptFilePath.TrimEnd((this.ToString() + ".cs").ToCharArray());
+
+        if (AssetDatabase.IsValidFolder(FilePath + SAVE_FOLDER_NAME) == false)
+        {
+            AssetDatabase.CreateFolder(FilePath.TrimEnd('/'), SAVE_FOLDER_NAME);
+
+            saveFile = ScriptableObject.CreateInstance<NoiseMixerEditorSaves>();
+
+            AssetDatabase.CreateAsset(saveFile, FilePath + SAVE_FOLDER_NAME + "/" + property.intValue + ".asset");
+            AssetDatabase.SaveAssets();
+        }
+        else if (AssetDatabase.FindAssets(property.intValue.ToString()).Length == 0)
+        {
+            saveFile = ScriptableObject.CreateInstance<NoiseMixerEditorSaves>();
+
+            AssetDatabase.CreateAsset(saveFile, FilePath + SAVE_FOLDER_NAME + "/" + property.intValue + ".asset");
+            AssetDatabase.SaveAssets();
+
+        }
+        else
+        {
+
+            saveFile = (NoiseMixerEditorSaves)AssetDatabase.LoadAssetAtPath(FilePath + SAVE_FOLDER_NAME + "/" + property.intValue + ".asset", typeof(NoiseMixerEditorSaves));
+
+        }
+
+
+
+    }
+
+    void SaveData()
+    {
+
+
+        NewMixer mixer = (NewMixer)actions[0];
+
+        saveFile.Height = mixer.YResolution;
+        saveFile.Width = mixer.XResolution;
+
+        saveFile.StartingValue = mixer.FillValue;
+
+        saveFile.Layers = new NoiseMixerEditorSaves.LayerData[actions.Count - 1];
+
+
+
+        for (int i = 1; i < actions.Count; i++)
+        {
+            MixerLayer layer = (MixerLayer)actions[i];
+
+            saveFile.Layers[i - 1] = new NoiseMixerEditorSaves.LayerData
+            {
+                Disable = layer.Disable,
+                layerNum = layer.layerNum,
+
+                typeLayer = (int)layer.mixerLayer,
+                seedType = (int)layer.seedType,
+                iteration = layer.iteration,
+                seed = layer.seed,
+                ErosionRadius = layer.ErosionRadius,
+                Inertia = layer.Inertia,
+                SedimentCapacityFactor = layer.SedimentCapacityFactor,
+                MinSedimentCapacity = layer.MinSedimentCapacity,
+                ErodeSpeed = layer.ErodeSpeed,
+                DepositSpeed = layer.DepositSpeed,
+                EvaporateSpeed = layer.EvaporateSpeed,
+                Gravity = layer.Gravity,
+                MaxDropletLifetime = layer.MaxDropletLifetime,
+                InitialWaterVolume = layer.InitialWaterVolume,
+                InitialSpeed = layer.InitialSpeed,
+                effectAmount = layer.effectAmount,
+                amountOfTiers = layer.amountOfTiers,
+                shiftAmount = layer.shiftAmount,
+                scaleAmount = layer.scaleAmount,
+                filterSize = layer.filterSize,
+
+                mainNoise = new NoiseMixerEditorSaves.NoiseType(),
+            };
+
+
+
+
+            saveFile.Layers[i - 1].mainNoise.NoiseScale = layer.layer.scaleNoise;
+            saveFile.Layers[i - 1].mainNoise.noiseType = layer.layer.noiseType;
+
+
+            SaveNoiseType(layer.layer.noiseType, layer.layer.noise, i - 1, true);
+
+            saveFile.Layers[i - 1].mainNoise.Inverse = layer.layer.Inverse;
+            saveFile.Layers[i - 1].mainNoise.shift = layer.layer.shift;
+            saveFile.Layers[i - 1].mainNoise.shiftAmount = layer.layer.shiftAmount;
+            saveFile.Layers[i - 1].mainNoise.scale = layer.layer.scale;
+            saveFile.Layers[i - 1].mainNoise.scaleAmount = layer.layer.scaleAmount;
+
+            saveFile.Layers[i - 1].mainNoise.hasMask = layer.layer.hasMask;
+            saveFile.Layers[i - 1].mainNoise.maskType = layer.layer.maskType;
+
+            saveFile.Layers[i - 1].mainNoise.MaskFloat = layer.layer.MaskFloat;
+            saveFile.Layers[i - 1].mainNoise.backgroundImage = AssetDatabase.GetAssetPath(layer.layer.backgroundImage);
+            saveFile.Layers[i - 1].mainNoise.noiseMaskScale = layer.layer.noiseMaskScale;
+            saveFile.Layers[i - 1].mainNoise.noiseMaskType = layer.layer.noiseMaskType;
+
+            if (layer.layer.noiseMask != null)
+                SaveNoiseType(layer.layer.noiseMaskType, layer.layer.noiseMask, i - 1, false);
+
+        }
+
+        EditorUtility.SetDirty(saveFile);
+    }
+
+    void SaveNoiseType(AllNoiseTypes noiseType, BaseAction noise, int LayerNum, bool MainNoise)
+    {
+
+
+        if (noiseType == AllNoiseTypes.FractalBrownianMotion || noiseType == AllNoiseTypes.BillowNoise ||
+            noiseType == AllNoiseTypes.RidgedNoiseMultifractal || noiseType == AllNoiseTypes.RidgeNoise)
+        {
+
+            NoiseMixerEditorSaves.FractionalType noiseSave = new NoiseMixerEditorSaves.FractionalType();
+
+            if (MainNoise)
+                saveFile.Layers[LayerNum].mainNoise.fractionalType = noiseSave;
+            else
+                saveFile.Layers[LayerNum].mainNoise.fractionalTypeMask = noiseSave;
+
+
+            FractalType fractalType = (FractalType)noise;
+            noiseSave.fractionalNoiseType = (int)fractalType.fractalNoises;
+            noiseSave.octaves = fractalType.octaves;
+            noiseSave.persistence = fractalType.persistence;
+            noiseSave.lacunarity = fractalType.lacunarity;
+            noiseSave.initFrequency = fractalType.initFrequency;
+            noiseSave.normalizeReturn = fractalType.normalizeReturn;
+            noiseSave.offset = fractalType.offset;
+
+
+            NoiseMixerEditorSaves.GradientType baseNoiseSave = new NoiseMixerEditorSaves.GradientType();
+
+
+            if (MainNoise)
+                saveFile.Layers[LayerNum].mainNoise.gradientType = baseNoiseSave;
+            else
+                saveFile.Layers[LayerNum].mainNoise.gradientTypeMask = baseNoiseSave;
+
+            GradientNoiseType gradientNoiseType = (GradientNoiseType)fractalType.noise;
+
+            baseNoiseSave.gradientNoiseType = (int)gradientNoiseType.gradientNoise;
+            baseNoiseSave.seedType = (int)gradientNoiseType.seedType;
+            baseNoiseSave.seed = gradientNoiseType.seed;
+            baseNoiseSave.evaluateType = gradientNoiseType.evaluateType;
+            baseNoiseSave.Normalized = gradientNoiseType.Normalize;
+        }
+
+        if (noiseType == AllNoiseTypes.PerlinNoise || noiseType == AllNoiseTypes.SimplexNoise ||
+           noiseType == AllNoiseTypes.OpenSimplexNoise || noiseType == AllNoiseTypes.OpenSimplexNoise2S)
+        {
+
+            NoiseMixerEditorSaves.GradientType noiseSave = new NoiseMixerEditorSaves.GradientType();
+
+
+            if (MainNoise)
+                saveFile.Layers[LayerNum].mainNoise.gradientType = noiseSave;
+            else
+                saveFile.Layers[LayerNum].mainNoise.gradientTypeMask = noiseSave;
+
+            GradientNoiseType gradientNoiseType = (GradientNoiseType)noise;
+
+            noiseSave.gradientNoiseType = (int)gradientNoiseType.gradientNoise;
+            noiseSave.seedType = (int)gradientNoiseType.seedType;
+            noiseSave.seed = gradientNoiseType.seed;
+            noiseSave.evaluateType = gradientNoiseType.evaluateType;
+            noiseSave.Normalized = gradientNoiseType.Normalize;
+        }
+
+
+        if (noiseType == AllNoiseTypes.Voronoi || noiseType == AllNoiseTypes.Worley)
+        {
+
+            NoiseMixerEditorSaves.VoronoiType noiseSave = new NoiseMixerEditorSaves.VoronoiType();
+
+            if (MainNoise)
+                saveFile.Layers[LayerNum].mainNoise.voronoiType = noiseSave;
+            else
+                saveFile.Layers[LayerNum].mainNoise.voronoiTypeMask = noiseSave;
+
+
+            VoronoiNoiseTypes voronoiNoiseType = (VoronoiNoiseTypes)noise;
+
+            noiseSave.VoronoiNoiseType = (int)voronoiNoiseType.voronoiType;
+            noiseSave.pointsAmount = voronoiNoiseType.pointsAmount;
+            noiseSave.xPointsAmount = voronoiNoiseType.xPointsAmount;
+            noiseSave.yPointsAmount = voronoiNoiseType.yPointsAmount;
+            noiseSave.SeedType = voronoiNoiseType.seedType;
+            noiseSave.seed = voronoiNoiseType.seed;
+            noiseSave.pointPlacement = voronoiNoiseType.pointPlacement;
+            noiseSave.distance = voronoiNoiseType.distance;
+        }
+
+    }
+
+    void LoadNoiseType(AllNoiseTypes noiseType, BaseAction noise, int LayerNum, bool MainNoise)
+    {
+
+
+        if ((noiseType == AllNoiseTypes.FractalBrownianMotion || noiseType == AllNoiseTypes.BillowNoise ||
+            noiseType == AllNoiseTypes.RidgedNoiseMultifractal || noiseType == AllNoiseTypes.RidgeNoise))
+        {
+
+            NoiseMixerEditorSaves.FractionalType noiseSave;
+
+            if (MainNoise)
+                noiseSave = saveFile.Layers[LayerNum].mainNoise.fractionalType;
+            else
+                noiseSave = saveFile.Layers[LayerNum].mainNoise.fractionalTypeMask;
+
+            if (noiseSave == null) return;
+
+            FractalType fractalType = (FractalType)noise;
+            fractalType.fractalNoises = (FractalType.FractalNoises)noiseSave.fractionalNoiseType;
+            fractalType.octaves = noiseSave.octaves;
+            fractalType.persistence = noiseSave.persistence;
+            fractalType.lacunarity = noiseSave.lacunarity;
+            fractalType.initFrequency = noiseSave.initFrequency;
+            fractalType.normalizeReturn = noiseSave.normalizeReturn;
+            fractalType.offset = noiseSave.offset;
+
+
+            NoiseMixerEditorSaves.GradientType baseNoiseSave;
+
+            if (MainNoise)
+                baseNoiseSave = saveFile.Layers[LayerNum].mainNoise.gradientType;
+            else
+                baseNoiseSave = saveFile.Layers[LayerNum].mainNoise.gradientTypeMask;
+
+            fractalType.gradientNoises = (GradientNoiseType.GradientNoises)baseNoiseSave.gradientNoiseType;
+
+            GradientNoiseType gradientNoiseType = (GradientNoiseType)fractalType.noise;
+
+            gradientNoiseType.gradientNoise = (GradientNoiseType.GradientNoises)baseNoiseSave.gradientNoiseType;
+            gradientNoiseType.seedType = (SeedType)baseNoiseSave.seedType;
+            gradientNoiseType.seed = baseNoiseSave.seed;
+            gradientNoiseType.evaluateType = baseNoiseSave.evaluateType;
+            gradientNoiseType.Normalize = baseNoiseSave.Normalized;
+        }
+
+        if (noiseType == AllNoiseTypes.PerlinNoise || noiseType == AllNoiseTypes.SimplexNoise ||
+           noiseType == AllNoiseTypes.OpenSimplexNoise || noiseType == AllNoiseTypes.OpenSimplexNoise2S)
+        {
+
+            NoiseMixerEditorSaves.GradientType noiseSave;
+
+            if (MainNoise)
+                noiseSave = saveFile.Layers[LayerNum].mainNoise.gradientType;
+            else
+                noiseSave = saveFile.Layers[LayerNum].mainNoise.gradientTypeMask;
+
+            if (noiseSave == null) return;
+
+            GradientNoiseType gradientNoiseType = (GradientNoiseType)noise;
+
+            gradientNoiseType.gradientNoise = (GradientNoiseType.GradientNoises)noiseSave.gradientNoiseType;
+            gradientNoiseType.seedType = (SeedType)noiseSave.seedType;
+            gradientNoiseType.seed = noiseSave.seed;
+            gradientNoiseType.evaluateType = noiseSave.evaluateType;
+            gradientNoiseType.Normalize = noiseSave.Normalized;
+
+        }
+
+
+        if (noiseType == AllNoiseTypes.Voronoi || noiseType == AllNoiseTypes.Worley)
+        {
+
+            NoiseMixerEditorSaves.VoronoiType noiseSave;
+
+            if (MainNoise)
+                noiseSave = saveFile.Layers[LayerNum].mainNoise.voronoiType;
+            else
+                noiseSave = saveFile.Layers[LayerNum].mainNoise.voronoiTypeMask;
+
+            if (noiseSave == null) return;
+
+            VoronoiNoiseTypes voronoiNoiseType = (VoronoiNoiseTypes)noise;
+
+            voronoiNoiseType.voronoiType = (VoronoiNoiseTypes.VoronoiType)noiseSave.VoronoiNoiseType;
+            voronoiNoiseType.pointsAmount = noiseSave.pointsAmount;
+            voronoiNoiseType.xPointsAmount = noiseSave.xPointsAmount;
+            voronoiNoiseType.yPointsAmount = noiseSave.yPointsAmount;
+            voronoiNoiseType.seedType = noiseSave.SeedType;
+            voronoiNoiseType.seed = noiseSave.seed;
+            voronoiNoiseType.pointPlacement = noiseSave.pointPlacement;
+            voronoiNoiseType.distance = noiseSave.distance;
+        }
+
+    }
+
+    void LoadData()
+    {
+
+        NewMixer mixer = new NewMixer();
+
+        actions.Add(mixer);
+
+        mixer.YResolution = saveFile.Height;
+        mixer.XResolution = saveFile.Width;
+        mixer.FillValue = saveFile.StartingValue;
+
+
+        if (saveFile.Layers != null)
+            for (int i = 1; i <= saveFile.Layers.Length; i++)
+            {
+
+                MixerLayer layer = new MixerLayer(i, this);
+
+                actions.Add(layer);
+
+                layer.Disable = saveFile.Layers[i - 1].Disable;
+                layer.layerNum = saveFile.Layers[i - 1].layerNum;
+
+                layer.mixerLayer = (MixerLayer.MixerLayerTypes)saveFile.Layers[i - 1].typeLayer;
+
+                layer.seedType = (SeedType)saveFile.Layers[i - 1].seedType;
+                layer.iteration = saveFile.Layers[i - 1].iteration;
+                layer.seed = saveFile.Layers[i - 1].seed;
+                layer.ErosionRadius = saveFile.Layers[i - 1].ErosionRadius;
+                layer.Inertia = saveFile.Layers[i - 1].Inertia;
+                layer.SedimentCapacityFactor = saveFile.Layers[i - 1].SedimentCapacityFactor;
+                layer.MinSedimentCapacity = saveFile.Layers[i - 1].MinSedimentCapacity;
+                layer.ErodeSpeed = saveFile.Layers[i - 1].ErodeSpeed;
+                layer.DepositSpeed = saveFile.Layers[i - 1].DepositSpeed;
+                layer.EvaporateSpeed = saveFile.Layers[i - 1].EvaporateSpeed;
+                layer.Gravity = saveFile.Layers[i - 1].Gravity;
+                layer.MaxDropletLifetime = saveFile.Layers[i - 1].MaxDropletLifetime;
+                layer.InitialWaterVolume = saveFile.Layers[i - 1].InitialWaterVolume;
+                layer.InitialSpeed = saveFile.Layers[i - 1].InitialSpeed;
+                layer.effectAmount = saveFile.Layers[i - 1].effectAmount;
+                layer.amountOfTiers = saveFile.Layers[i - 1].amountOfTiers;
+                layer.shiftAmount = saveFile.Layers[i - 1].shiftAmount;
+                layer.scaleAmount = saveFile.Layers[i - 1].scaleAmount;
+                layer.filterSize = saveFile.Layers[i - 1].filterSize;
+
+                if (saveFile.Layers[i - 1].mainNoise != null)
+                {
+
+                    layer.layer.scaleNoise = saveFile.Layers[i - 1].mainNoise.NoiseScale;
+                    layer.layer.noiseType = saveFile.Layers[i - 1].mainNoise.noiseType;
+                    layer.layer.noise = GetNoiseType(saveFile.Layers[i - 1].mainNoise.noiseType);
+
+                    LoadNoiseType(saveFile.Layers[i - 1].mainNoise.noiseType, layer.layer.noise, i - 1, true);
+
+                    layer.layer.Inverse = saveFile.Layers[i - 1].mainNoise.Inverse;
+                    layer.layer.shift = saveFile.Layers[i - 1].mainNoise.shift;
+                    layer.layer.shiftAmount = saveFile.Layers[i - 1].mainNoise.shiftAmount;
+                    layer.layer.scale = saveFile.Layers[i - 1].mainNoise.scale;
+                    layer.layer.scaleAmount = saveFile.Layers[i - 1].mainNoise.scaleAmount;
+
+                    layer.layer.hasMask = saveFile.Layers[i - 1].mainNoise.hasMask;
+                    layer.layer.maskType = saveFile.Layers[i - 1].mainNoise.maskType;
+
+                    layer.layer.MaskFloat = saveFile.Layers[i - 1].mainNoise.MaskFloat;
+                    layer.layer.backgroundImage = (Texture2D)AssetDatabase.LoadAssetAtPath(saveFile.Layers[i - 1].mainNoise.backgroundImage, typeof(Texture2D));
+
+                    layer.layer.noiseMask = GetNoiseType(saveFile.Layers[i - 1].mainNoise.noiseMaskType);
+
+                    if (layer.layer.noiseMask != null)
+                        LoadNoiseType(saveFile.Layers[i - 1].mainNoise.noiseMaskType, layer.layer.noiseMask, i - 1, false);
+
+                    layer.layer.noiseMaskScale = saveFile.Layers[i - 1].mainNoise.noiseMaskScale;
+                    layer.layer.noiseMaskType = saveFile.Layers[i - 1].mainNoise.noiseMaskType;
+
+                }
+
+
+            }
+
+    }
+
+    void HotKeySetup()
+    {
+        System.Reflection.FieldInfo info = typeof(EditorApplication).GetField("globalEventHandler", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+        value += (EditorApplication.CallbackFunction)info.GetValue(null);
+
+        value += EditorKeyPress;
+
+        info.SetValue(null, value);
+
+    }
+
+    void EditorKeyPress()
+    {
+       
+        if (this != null)
+        {
+            
+            Event e = Event.current;
+
+            if (e != null && e.type == EventType.KeyDown && e.keyCode == KeyCode.Q && e.shift)
+            {
+
+                Calculate();
+
+            }
+
+            if (e != null && e.type == EventType.KeyDown && e.keyCode == KeyCode.E && e.shift)
+            {
+
+                actions.Add(new MixerLayer(actions.Count, this));
+
+            }
+
+
+
+        }
+
+    }
+
+    bool StopPrefabAssetSave()
+    {
+
+        if (PrefabUtility.IsPartOfPrefabAsset(((NoiseMixerClass)target)))
+        {
+            SerializedObject SO = new SerializedObject(target);
+
+            SerializedProperty property = SO.FindProperty("ID");
+            property.intValue = 0;
+
+            SO.ApplyModifiedProperties();
+
+            return true;
+
+        }
+
+        return false;
+    }
+
+    void StopDuplicate()
+    {
+
+        if (PrefabUtility.IsPartOfPrefabInstance((NoiseMixerClass)target))
+        {
+            SerializedObject SO = new SerializedObject(target);
+
+            SerializedProperty property = SO.FindProperty("ID");
+
+            NoiseMixerClass[] noiseMixerClasses = GameObject.FindObjectsOfType<NoiseMixerClass>();
+
+            for (int i = 0; i < noiseMixerClasses.Length; i++)
+            {
+
+                if (noiseMixerClasses[i] != (NoiseMixerClass)target)
+                {
+
+                    SerializedObject otherScript = new SerializedObject(noiseMixerClasses[i]);
+
+                    SerializedProperty otherScriptID = otherScript.FindProperty("ID");
+
+                    if (otherScriptID.intValue == property.intValue)
+                    {
+                        property.intValue = 0;
+                        SO.ApplyModifiedProperties();
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    void Calculate()
+    {
+        for (int i = 0; i < actions.Count; i++)
+        {
+            actions[i].Code(this);
+        }
+
+        float[,] noiseReturn = ((NoiseMixerClass)target).Mixer.ApplyF(true);
+
+        foreach (INoiseMixerReturn output in ((MonoBehaviour)this.target).gameObject.GetComponents<INoiseMixerReturn>())
+        {
+            output.Return(noiseReturn);
+
+        }
+
+
 
     }
 
