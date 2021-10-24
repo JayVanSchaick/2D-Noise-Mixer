@@ -28,32 +28,75 @@ public class NoiseMixerClassEditor : Editor
 
     public void OnEnable()
     {
+        
 
-        //if is prefab break link to save file.
-        if (PrefabUtility.IsPartOfPrefabAsset(((NoiseMixerClass)target)))
-        {
+        // if prefab duplicate break link to save file.
+         StopDuplicate();
 
-            SerializedObject SO = new SerializedObject(target);
-            SerializedProperty property = SO.FindProperty("ID");
-            property.intValue = 0;
-
-            SO.ApplyModifiedProperties();
-
-            return;
-
-        }
-        else
+        //if is prefab asset break link to save file.
+        if(StopPrefabAssetSave() == false)
         {
             GetSaveFile();
 
             LoadData();
         }
 
-
-
-
     }
 
+
+    bool StopPrefabAssetSave()
+    {
+
+        if (PrefabUtility.IsPartOfPrefabAsset(((NoiseMixerClass)target)))
+        {
+            SerializedObject SO = new SerializedObject(target);
+
+            SerializedProperty property = SO.FindProperty("ID");
+            property.intValue = 0;
+
+            SO.ApplyModifiedProperties();
+
+            return true;
+
+        }
+
+        return false;
+    }
+
+    void StopDuplicate()
+    {
+
+        if (PrefabUtility.IsPartOfPrefabInstance((NoiseMixerClass)target))
+        {
+            SerializedObject SO = new SerializedObject(target);
+
+            SerializedProperty property = SO.FindProperty("ID");
+
+            NoiseMixerClass[] noiseMixerClasses = GameObject.FindObjectsOfType<NoiseMixerClass>();
+
+            for (int i = 0; i < noiseMixerClasses.Length; i++)
+            {
+
+                if (noiseMixerClasses[i] != (NoiseMixerClass)target)
+                {
+
+                    SerializedObject otherScript = new SerializedObject(noiseMixerClasses[i]);
+
+                    SerializedProperty otherScriptID = otherScript.FindProperty("ID");
+
+                    if (otherScriptID.intValue == property.intValue)
+                    {
+                        property.intValue = 0;
+                        SO.ApplyModifiedProperties();
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
 
     public override void OnInspectorGUI()
     {
@@ -252,7 +295,6 @@ public class NoiseMixerClassEditor : Editor
             EditorUtility.SetDirty(saveFile);
     }
 
-
     void SaveNoiseType(AllNoiseTypes noiseType, BaseAction noise, int LayerNum, bool MainNoise )
     {
 
@@ -338,11 +380,10 @@ public class NoiseMixerClassEditor : Editor
             noiseSave.SeedType = voronoiNoiseType.seedType;
             noiseSave.seed = voronoiNoiseType.seed;
             noiseSave.pointPlacement = voronoiNoiseType.pointPlacement;
-
+            noiseSave.distance = voronoiNoiseType.distance;
         }
 
     }
-
 
     void LoadNoiseType(AllNoiseTypes noiseType, BaseAction noise, int LayerNum, bool MainNoise)
     {
@@ -434,6 +475,7 @@ public class NoiseMixerClassEditor : Editor
             voronoiNoiseType.seedType = noiseSave.SeedType;
             voronoiNoiseType.seed = noiseSave.seed;
             voronoiNoiseType.pointPlacement = noiseSave.pointPlacement;
+            voronoiNoiseType.distance = noiseSave.distance;
         }
 
     }
@@ -1426,6 +1468,7 @@ public class NoiseMixerClassEditor : Editor
         public int xPointsAmount = 3;
         public  int yPointsAmount = 3;
 
+        public float distance = 10;
 
         public enum VoronoiType
         {
@@ -1464,6 +1507,7 @@ public class NoiseMixerClassEditor : Editor
                 y = mixer.YResolution;
             }
 
+            
 
             switch (voronoiType)
             {
@@ -1480,11 +1524,11 @@ public class NoiseMixerClassEditor : Editor
                 case VoronoiType.Worley:
                     if (pointPlacement == PointPlacement.Random)
                     {
-                        noiseMixerClassEditor.noiseSave = new WorleyNoise((uint)x, (uint)y, (uint)pointsAmount, GetSeed(seedType, seed));
+                        noiseMixerClassEditor.noiseSave = new WorleyNoise((uint)x, (uint)y, (uint)pointsAmount, GetSeed(seedType, seed), distance);
                     }
                     else
                     {
-                        noiseMixerClassEditor.noiseSave = new WorleyNoise((uint)x, (uint)y, (uint)xPointsAmount, (uint)yPointsAmount, GetSeed(seedType, seed));
+                        noiseMixerClassEditor.noiseSave = new WorleyNoise((uint)x, (uint)y, (uint)xPointsAmount, (uint)yPointsAmount, GetSeed(seedType, seed), distance);
                     }
                     break;
 
@@ -1536,6 +1580,15 @@ public class NoiseMixerClassEditor : Editor
                 yPointsAmount = EditorGUILayout.IntField("Amount of Column Points", yPointsAmount);
                 GUILayout.EndHorizontal();
 
+            }
+
+            if (voronoiType == VoronoiType.Worley)
+            {
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(style.padding.left + 5);
+                distance = EditorGUILayout.FloatField("Distance from Point", distance);
+                GUILayout.EndHorizontal();
             }
 
 

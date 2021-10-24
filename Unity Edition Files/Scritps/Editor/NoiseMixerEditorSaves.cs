@@ -145,6 +145,7 @@ public class NoiseMixerEditorSaves : ScriptableObject
         public int xPointsAmount;
         public int yPointsAmount;
 
+        public float distance;
 
         public NoiseMixerClassEditor.VoronoiNoiseTypes.PointPlacement pointPlacement;
 
