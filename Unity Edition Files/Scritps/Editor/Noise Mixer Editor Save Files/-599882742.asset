@@ -1,0 +1,354 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d73b358a91393242b7f47bf13609012, type: 3}
+  m_Name: -599882742
+  m_EditorClassIdentifier: 
+  Height: 512
+  Width: 512
+  StartingValue: 0
+  Layers:
+  - Disable: 0
+    layerNum: 2
+    typeLayer: 0
+    seedType: 0
+    iteration: 100000
+    seed: 0
+    ErosionRadius: 3
+    Inertia: 0.05
+    SedimentCapacityFactor: 4
+    MinSedimentCapacity: 0.01
+    ErodeSpeed: 0.3
+    DepositSpeed: 0.3
+    EvaporateSpeed: 0.01
+    Gravity: 4
+    MaxDropletLifetime: 30
+    InitialWaterVolume: 1
+    InitialSpeed: 1
+    effectAmount: 0
+    amountOfTiers: 10
+    shiftAmount: 0
+    scaleAmount: 1
+    filterSize: 2
+    mainNoise:
+      noiseType: 0
+      NoiseScale: 0.009
+      Inverse: 0
+      shift: 1
+      shiftAmount: 0
+      scale: 1
+      scaleAmount: 2.5
+      hasMask: 0
+      MaskFloat: 0
+      backgroundImage: 
+      noiseMaskScale: 0.9
+      maskType: 0
+      noiseMaskType: 0
+      gradientType:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalType:
+        fractionalNoiseType: 0
+        octaves: 5
+        persistence: 0.5
+        lacunarity: 2
+        initFrequency: 1
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiType:
+        VoronoiNoiseType: 0
+        SeedType: 0
+        seed: 0
+        pointsAmount: 0
+        xPointsAmount: 0
+        yPointsAmount: 0
+        distance: 0
+        pointPlacement: 0
+      gradientTypeMask:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalTypeMask:
+        fractionalNoiseType: 0
+        octaves: 2
+        persistence: 0.5
+        lacunarity: 2
+        initFrequency: 1
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiTypeMask:
+        VoronoiNoiseType: 0
+        SeedType: 0
+        seed: 0
+        pointsAmount: 0
+        xPointsAmount: 0
+        yPointsAmount: 0
+        distance: 0
+        pointPlacement: 0
+  - Disable: 0
+    layerNum: 2
+    typeLayer: 0
+    seedType: 0
+    iteration: 100000
+    seed: 0
+    ErosionRadius: 3
+    Inertia: 0.05
+    SedimentCapacityFactor: 4
+    MinSedimentCapacity: 0.01
+    ErodeSpeed: 0.3
+    DepositSpeed: 0.3
+    EvaporateSpeed: 0.01
+    Gravity: 4
+    MaxDropletLifetime: 30
+    InitialWaterVolume: 1
+    InitialSpeed: 1
+    effectAmount: 0
+    amountOfTiers: 10
+    shiftAmount: 0
+    scaleAmount: 1
+    filterSize: 2
+    mainNoise:
+      noiseType: 8
+      NoiseScale: 0.9
+      Inverse: 0
+      shift: 0
+      shiftAmount: 0
+      scale: 0
+      scaleAmount: 1
+      hasMask: 0
+      MaskFloat: 0
+      backgroundImage: 
+      noiseMaskScale: 0.9
+      maskType: 0
+      noiseMaskType: 0
+      gradientType:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalType:
+        fractionalNoiseType: 0
+        octaves: 0
+        persistence: 0
+        lacunarity: 0
+        initFrequency: 0
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiType:
+        VoronoiNoiseType: 0
+        SeedType: 1
+        seed: 10
+        pointsAmount: 10
+        xPointsAmount: 10
+        yPointsAmount: 10
+        distance: 10
+        pointPlacement: 1
+      gradientTypeMask:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalTypeMask:
+        fractionalNoiseType: 0
+        octaves: 2
+        persistence: 0.5
+        lacunarity: 2
+        initFrequency: 1
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiTypeMask:
+        VoronoiNoiseType: 0
+        SeedType: 0
+        seed: 0
+        pointsAmount: 0
+        xPointsAmount: 0
+        yPointsAmount: 0
+        distance: 0
+        pointPlacement: 0
+  - Disable: 0
+    layerNum: 3
+    typeLayer: 11
+    seedType: 0
+    iteration: 100000
+    seed: 0
+    ErosionRadius: 3
+    Inertia: 0.05
+    SedimentCapacityFactor: 4
+    MinSedimentCapacity: 0.01
+    ErodeSpeed: 0.3
+    DepositSpeed: 0.3
+    EvaporateSpeed: 0.01
+    Gravity: 4
+    MaxDropletLifetime: 30
+    InitialWaterVolume: 1
+    InitialSpeed: 1
+    effectAmount: 0
+    amountOfTiers: 10
+    shiftAmount: 0
+    scaleAmount: 1
+    filterSize: 2
+    mainNoise:
+      noiseType: 0
+      NoiseScale: 0.9
+      Inverse: 0
+      shift: 0
+      shiftAmount: 0
+      scale: 0
+      scaleAmount: 1
+      hasMask: 0
+      MaskFloat: 0
+      backgroundImage: 
+      noiseMaskScale: 0.9
+      maskType: 0
+      noiseMaskType: 0
+      gradientType:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalType:
+        fractionalNoiseType: 0
+        octaves: 2
+        persistence: 0.5
+        lacunarity: 2
+        initFrequency: 1
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiType:
+        VoronoiNoiseType: 0
+        SeedType: 0
+        seed: 0
+        pointsAmount: 0
+        xPointsAmount: 0
+        yPointsAmount: 0
+        distance: 0
+        pointPlacement: 0
+      gradientTypeMask:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalTypeMask:
+        fractionalNoiseType: 0
+        octaves: 0
+        persistence: 0
+        lacunarity: 0
+        initFrequency: 0
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiTypeMask:
+        VoronoiNoiseType: 0
+        SeedType: 0
+        seed: 0
+        pointsAmount: 0
+        xPointsAmount: 0
+        yPointsAmount: 0
+        distance: 0
+        pointPlacement: 0
+  - Disable: 0
+    layerNum: 4
+    typeLayer: 12
+    seedType: 0
+    iteration: 100000
+    seed: 0
+    ErosionRadius: 3
+    Inertia: 0.05
+    SedimentCapacityFactor: 4
+    MinSedimentCapacity: 0.01
+    ErodeSpeed: 0.3
+    DepositSpeed: 0.3
+    EvaporateSpeed: 0.01
+    Gravity: 4
+    MaxDropletLifetime: 30
+    InitialWaterVolume: 1
+    InitialSpeed: 1
+    effectAmount: 0.442
+    amountOfTiers: 10
+    shiftAmount: 0
+    scaleAmount: 1
+    filterSize: 3
+    mainNoise:
+      noiseType: 0
+      NoiseScale: 0.9
+      Inverse: 0
+      shift: 0
+      shiftAmount: 0
+      scale: 0
+      scaleAmount: 1
+      hasMask: 0
+      MaskFloat: 0
+      backgroundImage: 
+      noiseMaskScale: 0.9
+      maskType: 0
+      noiseMaskType: 0
+      gradientType:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalType:
+        fractionalNoiseType: 0
+        octaves: 2
+        persistence: 0.5
+        lacunarity: 2
+        initFrequency: 1
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiType:
+        VoronoiNoiseType: 0
+        SeedType: 0
+        seed: 0
+        pointsAmount: 0
+        xPointsAmount: 0
+        yPointsAmount: 0
+        distance: 0
+        pointPlacement: 0
+      gradientTypeMask:
+        gradientNoiseType: 0
+        seedType: 0
+        seed: 0
+        Normalized: 0
+        evaluateType: 0
+      fractionalTypeMask:
+        fractionalNoiseType: 0
+        octaves: 0
+        persistence: 0
+        lacunarity: 0
+        initFrequency: 0
+        normalizeReturn: 0
+        offset: 0
+        gradientNoise: 0
+      voronoiTypeMask:
+        VoronoiNoiseType: 0
+        SeedType: 0
+        seed: 0
+        pointsAmount: 0
+        xPointsAmount: 0
+        yPointsAmount: 0
+        distance: 0
+        pointPlacement: 0

@@ -40,6 +40,30 @@ public class NoiseMixerClassEditor : Editor
         }
 
         HotKeySetup();
+
+        EditorApplication.update += Update;
+
+    }
+
+
+    void Update()
+    {
+
+        if (((NoiseMixerClass)target).backgroundCalculation == true && ((NoiseMixerClass)target).Mixer.GetCalculationsF(out float[,] results, true))
+        {
+            ((NoiseMixerClass)target).backgroundCalculation = false;
+
+            foreach (INoiseMixerReturn output in ((MonoBehaviour)this.target).gameObject.GetComponents<INoiseMixerReturn>())
+            {
+                output.Return(results);
+
+            }
+
+            
+        }
+
+
+
     }
 
     public override void OnInspectorGUI()
@@ -1121,7 +1145,7 @@ public class NoiseMixerClassEditor : Editor
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(style.padding.left + 5);
-                distance = EditorGUILayout.FloatField("Distance from Point", distance);
+                distance = EditorGUILayout.FloatField(new GUIContent("Distance from Point", "The max distance from a point before a position (point being surveyed) is zero."), distance);
                 GUILayout.EndHorizontal();
             }
 
@@ -1758,14 +1782,10 @@ public class NoiseMixerClassEditor : Editor
             actions[i].Code(this);
         }
 
-        float[,] noiseReturn = ((NoiseMixerClass)target).Mixer.ApplyF(true);
+        //Max out threads because system will not use more than it has.
+       ((NoiseMixerClass)target).Mixer.ApplyOnOtherThreads(32);
 
-        foreach (INoiseMixerReturn output in ((MonoBehaviour)this.target).gameObject.GetComponents<INoiseMixerReturn>())
-        {
-            output.Return(noiseReturn);
-
-        }
-
+        ((NoiseMixerClass)target).backgroundCalculation = true;
 
 
     }
@@ -1785,9 +1805,14 @@ public class NoiseMixerClassEditor : Editor
 
     private void OnDestroy()
     {
+      
+
 
         if (((NoiseMixerClass)target) == null)
         {
+
+            EditorApplication.update -= Update;
+
             MonoScript ms = MonoScript.FromScriptableObject(this);
             string ScriptFilePath = AssetDatabase.GetAssetPath(ms);
 

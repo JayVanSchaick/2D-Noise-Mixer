@@ -9,6 +9,8 @@ public class NoiseMixerClass : MonoBehaviour
     [SerializeField]
     int ID;
 
+    public bool backgroundCalculation;
+
     public NoiseMixer.NoiseMixer Mixer;
 
 }
